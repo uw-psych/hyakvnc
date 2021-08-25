@@ -353,7 +353,7 @@ def main():
     parser.add_argument('--mem',
                     dest='mem',
                     help='Sub node memory',
-                    type=int)
+                    type=str)
     parser.add_argument('--kill',
                     dest='kill',
                     action='store_true',
