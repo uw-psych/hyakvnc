@@ -215,17 +215,6 @@ class login_node(node):
 
         Returns sub_node object if it has been acquired successfully and None otherwise.
         """
-        # Simulate successful allocation
-        #proc = subprocess.Popen("echo 'salloc: Granted job allocation 343553' && sleep 1 && \
-        #        echo 'salloc: Waiting for job resource configuration' && sleep 4 && \
-        #        echo 'salloc: Nodes n5342 are ready for job'", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        # Simulate failed allocation
-        #proc = subprocess.Popen(
-        #        "echo 'salloc: Granted job allocation 343553' && sleep 1 && \
-        #        echo 'salloc: Waiting for job resource configuration'", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        # Actual command
         proc = subprocess.Popen(["salloc", "-J", "vnc", "--no-shell", "-p", partition,
             "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -500,19 +489,6 @@ def main():
     print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
     print("=====================")
 
-    # TODO: remove these lines
-    #if args.debug:
-    #    print("Killing all VNC sessions")
-    #    logging.debug("Killing all VNC sessions")
-    #subnode.kill_vnc()
-    #if args.debug:
-    #    print(f"Canceling job {subnode.job_id}")
-    #    logging.debug(f"Canceling job {subnode.job_id}")
-    #hyak.cancel_node(subnode.job_id)
-    #if args.debug:
-    #    print("Killing ssh port forward between login node and subnode")
-    #    logging.debug("Killing ssh port forward between login node and subnode")
-    #h2s_fwd_proc.kill()
     exit(0)
 
 if __name__ == "__main__":
