@@ -129,7 +129,7 @@ class sub_node(node):
             time.sleep(1)
             timer = timer - 1
         if self.debug:
-            logging.debug("Failed to start vnc session (Timeout/?)")
+            logging.error("Failed to start vnc session (Timeout/?)")
         print("start_vnc: Error: Timed out...")
         return False
 
@@ -415,7 +415,10 @@ def main():
     on_subnode = re.match("(n|g)([0-9]{4}).hyak.local", hostname)
     on_loginnode = hostname in LOGIN_NODE_LIST
     if on_subnode or not on_loginnode:
-        print("Error: Please run on login node.")
+        msg = "Error: Please run on login node."
+        print(msg)
+        if args.debug:
+            logging.error(msg)
         exit(1)
 
     # check if authorized_keys contains klone to allow intracluster ssh access
@@ -501,6 +504,8 @@ def main():
 
     # set VNC password at user's request or if missing
     if not hyak.check_vnc_passwd() or args.set_passwd:
+        if args.debug:
+            logging.info("Setting new VNC password...")
         print("Please set new VNC password...")
         hyak.set_vnc_password()
 
