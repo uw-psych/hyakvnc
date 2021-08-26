@@ -161,7 +161,7 @@ class login_node(node):
 
     def find_node(self):
         """
-        Returns a set with [subnode_name, job_id] pairs and returns None otherwise
+        Returns a set of subnodes and returns None otherwise
         """
         ret = set()
         command = f"squeue | grep {os.getlogin()} | grep vnc"
@@ -188,7 +188,8 @@ class login_node(node):
                 if self.debug:
                     msg = f"Found active subnode {name} with job ID {job_id}"
                     logging.debug(msg)
-                ret.add((name, job_id))
+                tmp = sub_node(name, job_id)
+                ret.add(tmp)
         return None
 
     def check_vnc_passwd(self):
@@ -294,6 +295,10 @@ class login_node(node):
         Reference:
             See `man scancel` for more information on usage
         """
+        msg = f"Canceling job ID {job_id}"
+        print(f"\t{msg}")
+        if self.debug:
+            logging.debug(msg)
         proc = subprocess.Popen(["scancel", str(job_id)], stdout=subprocess.PIPE)
         print(str(proc.communicate()[0], 'utf-8'))
 
@@ -392,6 +397,10 @@ def main():
                     dest='mem',
                     help='Sub node memory',
                     type=str)
+    parser.add_argument('--kill',
+                    dest='kill_job_id',
+                    help='Kill specified VNC session, cancel its VNC job, and exit',
+                    type=int)
     parser.add_argument('--kill-all',
                     dest='kill_all',
                     action='store_true',
@@ -500,11 +509,31 @@ def main():
 
     # check for existing subnode
     node_set = hyak.find_node()
-    if not args.kill_all and not args.force:
+    if not args.kill_all and args.kill_job_id is None and not args.force:
         if node_set is not None:
-            for entry in node_set:
-                print(f"Error: Found active subnode {entry[0]} with job ID {entry[1]}")
+            for node in node_set:
+                print(f"Error: Found active subnode {node.name} with job ID {node.job_id}")
             exit(1)
+
+    if args.kill_job_id is not None:
+        msg = f"Attempting to kill {args.kill_job_id}"
+        print(msg)
+        if args.debug:
+            logging.info(msg)
+        if node_set is not None:
+            for node in node_set:
+                if re.match(str(node.job_id), str(args.kill_job_id)):
+                    logging.info("Found kill target")
+                    # TODO: kill vnc session
+                    #node.kill_vnc(node.vnc_display_number)
+                    # kill job
+                    hyak.cancel_node(args.kill_job_id)
+                    exit(0)
+        msg = f"{args.kill_job_id} is not claimed or already killed"
+        print(f"Error: {msg}")
+        if args.debug:
+            logging.error(msg)
+        exit(1)
 
     if args.kill_all:
         msg = "Killing all VNC sessions..."
@@ -515,13 +544,8 @@ def main():
         cmd = hyak.cmd_prefix + " vncserver -kill :*"
         subprocess.call(cmd, shell=True)
         if node_set is not None:
-            for entry in node_set:
-                tmp_job_id = entry[1]
-                msg = f"Canceling job ID {tmp_job_id}"
-                print(f"\t{msg}")
-                if args.debug:
-                    logging.debug(msg)
-                hyak.cancel_node(tmp_job_id)
+            for node in node_set:
+                hyak.cancel_node(node.job_id)
         exit(0)
 
     # set VNC password at user's request or if missing
