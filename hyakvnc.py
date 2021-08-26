@@ -99,38 +99,32 @@ class sub_node(node):
 
         Returns True if VNC session was started successfully and False otherwise
         """
-        vnc_cmd = f"{self.cmd_prefix} vncserver -xstartup {XSTARTUP_FILEPATH} -baseHttpPort {BASE_VNC_PORT} -depth 24 &"
+        timer = 15
+        vnc_cmd = f"timeout {timer} {self.cmd_prefix} vncserver -xstartup {XSTARTUP_FILEPATH} -baseHttpPort {BASE_VNC_PORT} -depth 24 &"
         proc = self.run_command(vnc_cmd)
 
         # get display number and port number
-        time.sleep(2)
-        timer = 15
-        while timer > 0:
+        while proc.poll() is None:
             line = str(proc.stdout.readline(), 'utf-8')
 
-            # TODO: check if this breaks prematurely
-            if not line:
-                break
-
-            if self.debug:
-                logging.debug(f"line: {line}")
-            if "desktop at :" in line:
-                # match against the following pattern:
-                #New 'n3000.hyak.local:1 (hansem7)' desktop at :1 on machine n3000.hyak.local
-                pattern = re.compile("""
-                        (New\s)
-                        (\'([^:]+:(?P<display_number>[0-9]+))\s([^\s]+)\s)
-                        """, re.VERBOSE)
-                match = re.match(pattern, line)
-                assert match is not None
-                self.vnc_display_number = int(match.group("display_number"))
-                self.vnc_port = self.vnc_display_number + BASE_VNC_PORT
+            if line is not None:
                 if self.debug:
-                    logging.debug("Obtained display number: {self.vnc_display_number}")
-                    logging.debug("Obtained VNC port: {self.vnc_port}")
-                return True
-            time.sleep(1)
-            timer = timer - 1
+                    logging.debug(f"line: {line}")
+                if "desktop at :" in line:
+                    # match against the following pattern:
+                    #New 'n3000.hyak.local:1 (hansem7)' desktop at :1 on machine n3000.hyak.local
+                    pattern = re.compile("""
+                            (New\s)
+                            (\'([^:]+:(?P<display_number>[0-9]+))\s([^\s]+)\s)
+                            """, re.VERBOSE)
+                    match = re.match(pattern, line)
+                    assert match is not None
+                    self.vnc_display_number = int(match.group("display_number"))
+                    self.vnc_port = self.vnc_display_number + BASE_VNC_PORT
+                    if self.debug:
+                        logging.debug("Obtained display number: {self.vnc_display_number}")
+                        logging.debug("Obtained VNC port: {self.vnc_port}")
+                    return True
         if self.debug:
             logging.error("Failed to start vnc session (Timeout/?)")
         print("start_vnc: Error: Timed out...")
