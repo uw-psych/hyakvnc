@@ -45,12 +45,15 @@ SINGULARITY_BIN = "/opt/ohpc/pub/libs/singularity/3.7.1/bin/singularity"
 XFCE_CONTAINER = "/gscratch/ece/xfce_singularity/xfce.sif"
 XSTARTUP_FILEPATH = "/gscratch/ece/xfce_singularity/xstartup"
 AUTH_KEYS_FILEPATH = os.path.expanduser("~/.ssh/authorized_keys")
+SINGULARITY_BINDPATH = os.getenv("SINGULARITY_BINDPATH")
+if SINGULARITY_BINDPATH is None:
+    SINGULARITY_BINDPATH = "/tmp:/tmp,$HOME,$PWD,/gscratch,/opt:/opt,/:/hyak_root"
 
 class node:
     def __init__(self, name, debug=False):
         self.debug = debug
         self.name = name
-        self.cmd_prefix = SINGULARITY_BIN + " exec " + XFCE_CONTAINER
+        self.cmd_prefix = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {XFCE_CONTAINER}"
 
 class sub_node(node):
     def __init__(self, name, job_id, debug=False):
