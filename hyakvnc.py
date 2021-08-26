@@ -90,7 +90,8 @@ class sub_node(node):
 
     # TODO: Find active VNC session
     def check_vnc(self):
-        pass
+        cmd = f"{self.cmd_prefix} vncserver -list"
+        proc = self.run_command(cmd)
 
     def start_vnc(self):
         """
@@ -99,17 +100,13 @@ class sub_node(node):
         Returns True if VNC session was started successfully and False otherwise
         """
         vnc_cmd = f"{self.cmd_prefix} vncserver -xstartup {XSTARTUP_FILEPATH} -baseHttpPort {BASE_VNC_PORT} -depth 24 &"
-        check_cmd = f"{self.cmd_prefix} vncserver -list"
         proc = self.run_command(vnc_cmd)
-        if self.debug:
-            logging.debug(str(proc.communicate()[0], 'utf-8'))
 
         # get display number and port number
-        check_proc = self.run_command(check_cmd)
         time.sleep(2)
         timer = 15
         while timer > 0:
-            line = str(check_proc.stdout.readline(), 'utf-8')
+            line = str(proc.stdout.readline(), 'utf-8')
 
             # TODO: check if this breaks prematurely
             if not line:
@@ -117,9 +114,10 @@ class sub_node(node):
 
             if self.debug:
                 logging.debug(f"line: {line}")
-            if ":" in line[0]:
+            if "desktop at :" in line:
                 pattern = re.compile("""
-                        (:)(?P<display_number>[0-9]+)
+                        (New\s)
+                        (\'([^:]+:(?P<display_number>[0-9]+))\s([^\s]+)\s)
                         """, re.VERBOSE)
                 match = re.match(pattern, line)
                 assert match is not None
