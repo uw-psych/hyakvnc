@@ -269,7 +269,13 @@ class login_node(node):
 
         assert subnode_job_id is not None
         assert subnode_name is not None
-        self.subnode = sub_node(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
+        sn = self.subnode = sub_node(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
+        sn.res_time=res_time
+        sn.timeout=timeout
+        sn.cpus=cpus
+        sn.mem=mem
+        sn.partition=partition
+        sn.account=account
         return self.subnode
 
     def cancel_node(self, job_id:int):
