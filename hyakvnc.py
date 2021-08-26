@@ -290,8 +290,9 @@ class login_node(node):
             logging.debug(f"Checking if port {port} is used...")
         netstat = psutil.net_connections()
         for entry in netstat:
-            if self.debug:
-                logging.debug(f"Checking entry: {entry}")
+            # Too verbose
+            #if self.debug:
+            #    logging.debug(f"Checking entry: {entry}")
             if port == entry[3].port:
                 return False
         return True
