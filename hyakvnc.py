@@ -43,6 +43,7 @@ LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
 SINGULARITY_BIN = "/opt/ohpc/pub/libs/singularity/3.7.1/bin/singularity"
 XFCE_CONTAINER = "/gscratch/ece/xfce_singularity/xfce.sif"
 XSTARTUP_FILEPATH = "/gscratch/ece/xfce_singularity/xstartup"
+AUTH_KEYS_FILEPATH = os.path.expanduser("~/.ssh/authorized_keys")
 
 class node:
     def __init__(self, name, debug=False):
@@ -52,6 +53,7 @@ class node:
 
 class sub_node(node):
     def __init__(self, name, job_id, debug=False):
+        assert os.path.exists(AUTH_KEYS_FILEPATH)
         super().__init__(name, debug)
         self.hostname = name + ".hyak.local"
         self.job_id = job_id
@@ -332,6 +334,19 @@ class login_node(node):
             if item == "subnode" and props[item] is not None:
                 props[item].print_props()
 
+def check_auth_keys():
+    """
+    Returns True if klone exists in ~/.ssh/authorized_keys and False otherwise
+    """
+    assert os.path.exists(AUTH_KEYS_FILEPATH)
+    f = open(AUTH_KEYS_FILEPATH, "r")
+    lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if "klone" in line:
+            return True
+    return False
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--partition',
@@ -400,6 +415,58 @@ def main():
     if on_subnode or not on_loginnode:
         print("Error: Please run on login node.")
         exit(1)
+
+    # check if authorized_keys contains klone to allow intracluster ssh access
+    # Reference:
+    #  - https://hyak.uw.edu/docs/setup/ssh#intracluster-ssh-keys
+    if not os.path.exists(AUTH_KEYS_FILEPATH) or not check_auth_keys():
+        if args.debug:
+            logging.warning("Warning: Not authorized for intracluster SSH access")
+        print("Warning: Please authorize for intracluster SSH access")
+        print(f"\tSee here for more information:")
+        print(f"\t\thttps://hyak.uw.edu/docs/setup/ssh#intracluster-ssh-keys")
+
+        # check if ssh key exists
+        pr_key_filepath = os.path.expanduser("~/.ssh/id_rsa")
+        pub_key_filepath = pr_key_filepath + ".pub"
+        if not os.path.exists(pr_key_filepath):
+            msg = "Warning: SSH key is missing"
+            if args.debug:
+                logging.warning(msg)
+            print(msg)
+            # prompt if user wants to create key
+            response = input(f"Create SSH key ({pr_key_filepath})? [y/N] ")
+            if re.match("[yY]", response):
+                # create key
+                print(f"Creating new SSH key ({pr_key_filepath})")
+                cmd = f'ssh-keygen -C klone -t rsa -b 2048 -f {pr_key_filepath} -q -N ""'
+                if args.debug:
+                    print(cmd)
+                subprocess.call(cmd, shell=True)
+            else:
+                msg = "Declined SSH key creation. Quiting program..."
+                if args.debug:
+                    logging.info(msg)
+                print(msg)
+                exit(1)
+
+        response = input("Allow intracluster access? [y/N] ")
+        if re.match("[yY]", response):
+            # add key to authorized_keys
+            cmd = f"cat {pub_key_filepath} >> {AUTH_KEYS_FILEPATH}"
+            if args.debug:
+                print(cmd)
+            subprocess.call(cmd, shell=True)
+            cmd = f"chmod 600 {AUTH_KEYS_FILEPATH}"
+            if args.debug:
+                print(cmd)
+            subprocess.call(cmd, shell=True)
+        else:
+            print("Declined SSH key creation. Quiting program...")
+            exit(1)
+    else:
+        if args.debug:
+            logging.info("Already authorized for intracluster access.")
 
     # create login node object
     hyak = login_node(hostname, args.debug)
