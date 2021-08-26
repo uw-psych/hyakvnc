@@ -397,7 +397,7 @@ def main():
     hostname = os.uname()[1]
     on_subnode = re.match("(n|g)([0-9]{4}).hyak.local", hostname)
     on_loginnode = hostname in LOGIN_NODE_LIST
-    if on_subnode and not on_loginnode:
+    if on_subnode or not on_loginnode:
         print("Error: Please run on login node.")
         exit(1)
 
