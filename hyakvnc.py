@@ -205,13 +205,14 @@ class login_node(node):
         elif isinstance(command, str):
             return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    def reserve_node(self, res_time=3, timeout=10, mem="16G", partition="compute-hugemem", account="ece"):
+    def reserve_node(self, res_time=3, timeout=10, cpus=8, mem="16G", partition="compute-hugemem", account="ece"):
         """
         Reserves a node and waits until the node has been acquired.
 
         Args:
           res_time: Number of hours to reserve sub node
           timeout: Number of seconds to wait for node allocation
+          cpus: Number of cpus to allocate
           mem: Amount of memory to allocate (Examples: "8G" for 8GiB of memory)
           partition: Partition name (see `man salloc` on --partition option for more information)
           account: Account name (see `man salloc` on --account option for more information)
@@ -219,7 +220,8 @@ class login_node(node):
         Returns sub_node object if it has been acquired successfully and None otherwise.
         """
         proc = subprocess.Popen(["salloc", "-J", "vnc", "--no-shell", "-p", partition,
-            "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         timer = timeout
         alloc_stat = False
@@ -365,6 +367,10 @@ def main():
     parser.add_argument('-t', '--time',
                     dest='time',
                     help='Sub node reservation time (in hours)',
+                    type=int)
+    parser.add_argument('-c', '--cpus',
+                    dest='cpus',
+                    help='Sub node cpu count',
                     type=int)
     parser.add_argument('--mem',
                     dest='mem',
@@ -516,9 +522,12 @@ def main():
     # reserve node
     res_time = 3 # hours
     timeout = 10 # seconds
+    cpus = 8
     mem = "16G"
     partition = "compute-hugemem"
     account = "ece"
+    if args.cpus is not None:
+        cpus = args.cpus
     if args.mem is not None:
         mem = args.mem
     if args.account is not None:
@@ -528,7 +537,7 @@ def main():
     if args.time is not None:
         res_time = args.time
     # TODO: allow node count override (harder to implement)
-    subnode = hyak.reserve_node(res_time, timeout, mem, partition, account)
+    subnode = hyak.reserve_node(res_time, timeout, cpus, mem, partition, account)
     if subnode is None:
         exit(1)
 
