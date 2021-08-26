@@ -392,10 +392,10 @@ def main():
                     dest='mem',
                     help='Sub node memory',
                     type=str)
-    parser.add_argument('--kill',
-                    dest='kill',
+    parser.add_argument('--kill-all',
+                    dest='kill_all',
                     action='store_true',
-                    help='Kill all VNC sessions, cancel VNC nodes, and exit')
+                    help='Kill all VNC sessions, cancel VNC jobs, and exit')
     parser.add_argument('--set-passwd',
                     dest='set_passwd',
                     action='store_true',
@@ -500,13 +500,13 @@ def main():
 
     # check for existing subnode
     node_set = hyak.find_node()
-    if not args.kill and not args.force:
+    if not args.kill_all and not args.force:
         if node_set is not None:
             for entry in node_set:
                 print(f"Error: Found active subnode {entry[0]} with job ID {entry[1]}")
             exit(1)
 
-    if args.kill:
+    if args.kill_all:
         msg = "Killing all VNC sessions..."
         print(msg)
         if args.debug:
