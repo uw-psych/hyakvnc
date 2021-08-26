@@ -115,6 +115,8 @@ class sub_node(node):
             if self.debug:
                 logging.debug(f"line: {line}")
             if "desktop at :" in line:
+                # match against the following pattern:
+                #New 'n3000.hyak.local:1 (hansem7)' desktop at :1 on machine n3000.hyak.local
                 pattern = re.compile("""
                         (New\s)
                         (\'([^:]+:(?P<display_number>[0-9]+))\s([^\s]+)\s)
@@ -171,6 +173,8 @@ class login_node(node):
                     return None
                 return ret
             if os.getlogin() in line:
+                # match against pattern:
+                #            864877 compute-h      vnc  hansem7  R       4:05      1 n3000
                 pattern = re.compile("""
                         (\s+)
                         (?P<job_id>[0-9]+)
@@ -236,6 +240,8 @@ class login_node(node):
                 print(msg)
                 logging.debug(msg)
             if "Granted job allocation" in line:
+                # match against pattern:
+                #salloc: Granted job allocation 864875
                 pattern = re.compile("""
                         (salloc:\sGranted\sjob\sallocation\s)
                         (?P<job_id>[0-9]+)
@@ -243,6 +249,8 @@ class login_node(node):
                 match = pattern.match(line)
                 subnode_job_id = match.group("job_id")
             elif "are ready for job" in line:
+                # match against pattern:
+                #salloc: Nodes n3000 are ready for job
                 pattern = re.compile("""
                         (salloc:\sNodes\s)
                         (?P<node_name>n[0-9]{4})
