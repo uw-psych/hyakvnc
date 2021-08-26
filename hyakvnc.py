@@ -37,6 +37,7 @@ import re # for regex
 # - [x] map node<->login port to unused user<->login port
 # - [x] port forward between login<->subnode
 # - [x] print instructions to user to setup user<->login port forwarding
+# - [ ] print time left for node with --status argument
 
 BASE_VNC_PORT = 5900
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
@@ -409,6 +410,7 @@ def main():
             print(f"\t{msg}")
             logging.debug(msg)
 
+    # check if running script on login node
     hostname = os.uname()[1]
     on_subnode = re.match("(n|g)([0-9]{4}).hyak.local", hostname)
     on_loginnode = hostname in LOGIN_NODE_LIST
