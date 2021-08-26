@@ -584,7 +584,7 @@ def main():
     # print command to setup User<->Login port forwarding
     print("=====================")
     print("Run the following in a new terminal window:")
-    print(f"    ssh -N -f -L {hyak.u2h_port}:127.0.0.1:{hyak.u2h_port} {os.getlogin()}@klone.hyak.uw.edu &")
+    print(f"    ssh -N -f -L {hyak.u2h_port}:127.0.0.1:{hyak.u2h_port} {os.getlogin()}@klone.hyak.uw.edu")
     print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
     print("=====================")
 
