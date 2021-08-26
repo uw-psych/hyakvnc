@@ -225,15 +225,14 @@ class login_node(node):
 
         Returns sub_node object if it has been acquired successfully and None otherwise.
         """
-        proc = subprocess.Popen(["salloc", "-J", "vnc", "--no-shell", "-p", partition,
+        proc = subprocess.Popen(["timeout", str(timeout), "salloc", "-J", "vnc", "--no-shell", "-p", partition,
             "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-        timer = timeout
         alloc_stat = False
 
         print("Allocating node...")
-        while not alloc_stat and timer > 0:
+        while proc.poll() is None and not alloc_stat:
             print("...")
             line = str(proc.stdout.readline(), 'utf-8').strip()
             if self.debug:
@@ -265,16 +264,16 @@ class login_node(node):
                 msg = f"Skipping line: {line}"
                 print(msg)
                 logging.debug(msg)
-            time.sleep(1)
-            timer = timer - 1
         if proc.stdout is not None:
             proc.stdout.close()
         if proc.stderr is not None:
             proc.stderr.close()
 
         if not alloc_stat:
-            print("Error: node allocation timed out.")
-            self.cancel_node(job_id)
+            msg = "Error: node allocation timed out."
+            print(msg)
+            if self.debug:
+                logging.error(msg)
             return None
 
         assert subnode_job_id is not None
