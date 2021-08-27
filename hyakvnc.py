@@ -565,7 +565,7 @@ def main():
 
     # reserve node
     res_time = 3 # hours
-    timeout = 10 # seconds
+    timeout = 20 # seconds
     cpus = 8
     mem = "16G"
     partition = "compute-hugemem"
