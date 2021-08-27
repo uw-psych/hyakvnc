@@ -161,7 +161,7 @@ class login_node(node):
         """
         ret = set()
         command = f"squeue | grep {os.getlogin()} | grep vnc"
-        proc = subprocess.Popen(command, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        proc = self.run_command(command)
         while True:
             line = str(proc.stdout.readline(), 'utf-8')
             if self.debug:
@@ -216,10 +216,28 @@ class login_node(node):
         subprocess.call(cmd, shell=True)
 
     def run_command(self, command):
+        """
+        Run command (with arguments) on login node.
+        Commands can be in either str or list format.
+
+        Example:
+          cmd_str = "echo hi"
+          cmd_list = ["echo", "hi"]
+
+        Args:
+          command : command and its arguments to run on subnode
+
+        Returns ssh subprocess with stderr->stdout and stdout->PIPE
+        """
+        assert command is not None
+        if self.debug:
+            msg = f"Running on {self.name}: {command}"
+            print(msg)
+            logging.debug(msg)
         if isinstance(command, list):
             return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         elif isinstance(command, str):
-            return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     def reserve_node(self, res_time=3, timeout=10, cpus=8, mem="16G", partition="compute-hugemem", account="ece"):
         """
@@ -235,9 +253,9 @@ class login_node(node):
 
         Returns sub_node object if it has been acquired successfully and None otherwise.
         """
-        proc = subprocess.Popen(["timeout", str(timeout), "salloc", "-J", "vnc", "--no-shell", "--exclusive", "-p", partition,
-            "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmd = ["timeout", str(timeout), "salloc", "-J", "vnc", "--no-shell", "--exclusive", "-p", partition,
+            "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)]
+        proc = self.run_command(cmd)
 
         alloc_stat = False
 
@@ -307,7 +325,7 @@ class login_node(node):
         print(f"\t{msg}")
         if self.debug:
             logging.debug(msg)
-        proc = subprocess.Popen(["scancel", str(job_id)], stdout=subprocess.PIPE)
+        proc = self.run_command(["scancel", str(job_id)])
         print(str(proc.communicate()[0], 'utf-8'))
 
     def check_port(self, port:int):
@@ -350,7 +368,8 @@ class login_node(node):
         if self.debug:
             msg = f"Creating port forward: Login node({login_port})<->Subnode({subnode_port})"
             logging.debug(msg)
-        return subprocess.Popen(["ssh", "-N", "-f", "-L", f"{login_port}:127.0.0.1:{subnode_port}", self.subnode.hostname], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmd = ["ssh", "-N", "-f", "-L", f"{login_port}:127.0.0.1:{subnode_port}", self.subnode.hostname]
+        self.run_command(cmd)
 
     def print_props(self):
         """
