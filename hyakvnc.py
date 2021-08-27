@@ -109,7 +109,7 @@ class sub_node(node):
 
             if line is not None:
                 if self.debug:
-                    logging.debug(f"line: {line}")
+                    logging.debug(f"start_vnc: {line}")
                 if "desktop at :" in line:
                     # match against the following pattern:
                     #New 'n3000.hyak.local:1 (hansem7)' desktop at :1 on machine n3000.hyak.local
@@ -162,6 +162,8 @@ class login_node(node):
         proc = subprocess.Popen(command, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         while True:
             line = str(proc.stdout.readline(), 'utf-8')
+            if self.debug:
+                logging.debug(f"find_node: {line}")
             if not line:
                 if not ret:
                     return None
@@ -240,8 +242,7 @@ class login_node(node):
             print("...")
             line = str(proc.stdout.readline(), 'utf-8').strip()
             if self.debug:
-                msg = f"line: {line}"
-                print(msg)
+                msg = f"reserve_node: {line}"
                 logging.debug(msg)
             if "Granted job allocation" in line:
                 # match against pattern:
