@@ -173,13 +173,23 @@ class login_node(node):
                         (\s+)
                         (?P<job_id>[0-9]+)
                         (\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+)
-                        (?P<subnode_name>n[0-9]{4})
+                        (?P<subnode_name>[^\s]+)
                         """, re.VERBOSE)
                 match = pattern.match(line)
                 assert match is not None
                 name = match.group("subnode_name")
                 job_id = match.group("job_id")
-                if self.debug:
+                if "Resources" in name:
+                    # Quit if another node is being allocated (from another process?)
+                    proc.kill()
+                    msg = f"Warning: Already allocating node with job {job_id}"
+                    print(msg)
+                    print("Please try again later or run again with --force argument")
+                    if self.debug:
+                        logging.info(f"name: {name}")
+                        logging.info(f"job_id: {job_id}")
+                        logging.warning(msg)
+                elif self.debug:
                     msg = f"Found active subnode {name} with job ID {job_id}"
                     logging.debug(msg)
                 tmp = sub_node(name, job_id)
