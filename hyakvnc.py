@@ -83,10 +83,12 @@ class sub_node(node):
         Returns ssh subprocess with stderr->stdout and stdout->PIPE
         """
         assert self.name is not None
+        cmd = ["ssh", self.hostname, command]
         if self.debug:
-            print(["ssh", self.hostname, command])
-            logging.debug(["ssh", self.hostname, command])
-        return subprocess.Popen(["ssh", self.hostname, command], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            msg = f"Running on {self.name}: {cmd}"
+            print(msg)
+            logging.info(msg)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     # TODO: Find active VNC session
     def check_vnc(self):
@@ -171,6 +173,8 @@ class login_node(node):
             if os.getlogin() in line:
                 # match against pattern:
                 #            864877 compute-h      vnc  hansem7  R       4:05      1 n3000
+                # or the following if a node is in the process of being acquired
+                #            870400 compute-h      vnc  hansem7 PD       0:00      1 (Resources)
                 pattern = re.compile("""
                         (\s+)
                         (?P<job_id>[0-9]+)
@@ -614,7 +618,10 @@ def main():
     # print command to setup User<->Login port forwarding
     print("=====================")
     print("Run the following in a new terminal window:")
-    print(f"    ssh -N -f -L {hyak.u2h_port}:127.0.0.1:{hyak.u2h_port} {os.getlogin()}@klone.hyak.uw.edu")
+    msg = f"ssh -N -f -L {hyak.u2h_port}:127.0.0.1:{hyak.u2h_port} {os.getlogin()}@klone.hyak.uw.edu"
+    print(f"\t{msg}")
+    if args.debug:
+        logging.debug(msg)
     print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
     print("=====================")
 
