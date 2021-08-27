@@ -122,8 +122,8 @@ class sub_node(node):
                     self.vnc_display_number = int(match.group("display_number"))
                     self.vnc_port = self.vnc_display_number + BASE_VNC_PORT
                     if self.debug:
-                        logging.debug("Obtained display number: {self.vnc_display_number}")
-                        logging.debug("Obtained VNC port: {self.vnc_port}")
+                        logging.debug(f"Obtained display number: {self.vnc_display_number}")
+                        logging.debug(f"Obtained VNC port: {self.vnc_port}")
                     return True
         if self.debug:
             logging.error("Failed to start vnc session (Timeout/?)")
@@ -608,6 +608,8 @@ def main():
     # create port forward between login and sub nodes
     print(f"Creating port forward: Login node({hyak.u2h_port})<->Subnode({subnode.vnc_port})")
     h2s_fwd_proc = hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port)
+
+    # TODO: check if port forward succeeded
 
     # print command to setup User<->Login port forwarding
     print("=====================")
