@@ -213,7 +213,23 @@ class login_node(node):
         Set VNC password
         """
         cmd = self.cmd_prefix + " vncpasswd"
-        subprocess.call(cmd, shell=True)
+        self.call_command(cmd)
+
+    def call_command(self, command:str):
+        """
+        Call command (with arguments) on login node (to allow user interaction).
+
+        Args:
+          command:str : command and its arguments to run on subnode
+
+        Returns None
+        """
+        if self.debug:
+            msg = f"Calling on {self.name}: {command}"
+            print(msg)
+            logging.debug(msg)
+        subprocess.call(command, shell=True)
+        return None
 
     def run_command(self, command):
         """
@@ -569,7 +585,7 @@ def main():
             logging.debug(msg)
         # kill all vnc sessions
         cmd = hyak.cmd_prefix + " vncserver -kill :*"
-        subprocess.call(cmd, shell=True)
+        hyak.call_command(cmd)
         if node_set is not None:
             for node in node_set:
                 hyak.cancel_node(node.job_id)
