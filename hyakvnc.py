@@ -38,6 +38,8 @@ import re # for regex
 # - [x] port forward between login<->subnode
 # - [x] print instructions to user to setup user<->login port forwarding
 # - [ ] print time left for node with --status argument
+# - [ ] Set vnc settings via file (~/.hyakvnc.conf)
+# - [ ] Write unit tests for functions
 
 BASE_VNC_PORT = 5900
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
@@ -49,13 +51,13 @@ SINGULARITY_BINDPATH = os.getenv("SINGULARITY_BINDPATH")
 if SINGULARITY_BINDPATH is None:
     SINGULARITY_BINDPATH = "/tmp:/tmp,$HOME,$PWD,/gscratch,/opt:/opt,/:/hyak_root"
 
-class node:
+class Node:
     def __init__(self, name, debug=False):
         self.debug = debug
         self.name = name
         self.cmd_prefix = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {XFCE_CONTAINER}"
 
-class sub_node(node):
+class SubNode(Node):
     def __init__(self, name, job_id, debug=False):
         assert os.path.exists(AUTH_KEYS_FILEPATH)
         super().__init__(name, debug)
@@ -147,7 +149,7 @@ class sub_node(node):
         cmd = self.cmd_prefix + " vncserver -kill " + target
         self.run_command(cmd)
 
-class login_node(node):
+class LoginNode(Node):
     def __init__(self, name, debug=False):
         assert os.path.exists(XSTARTUP_FILEPATH)
         assert os.path.exists(SINGULARITY_BIN)
@@ -198,11 +200,11 @@ class login_node(node):
                 elif self.debug:
                     msg = f"Found active subnode {name} with job ID {job_id}"
                     logging.debug(msg)
-                tmp = sub_node(name, job_id)
+                tmp = SubNode(name, job_id)
                 ret.add(tmp)
         return None
 
-    def check_vnc_passwd(self):
+    def check_vnc_password(self):
         """
         Returns True if vnc password is set and False otherwise
         """
@@ -267,7 +269,7 @@ class login_node(node):
           partition: Partition name (see `man salloc` on --partition option for more information)
           account: Account name (see `man salloc` on --account option for more information)
 
-        Returns sub_node object if it has been acquired successfully and None otherwise.
+        Returns SubNode object if it has been acquired successfully and None otherwise.
         """
         cmd = ["timeout", str(timeout), "salloc", "-J", "vnc", "--no-shell", "--exclusive", "-p", partition,
             "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)]
@@ -321,7 +323,7 @@ class login_node(node):
 
         assert subnode_job_id is not None
         assert subnode_name is not None
-        sn = self.subnode = sub_node(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
+        sn = self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
         sn.res_time=res_time
         sn.timeout=timeout
         sn.cpus=cpus
@@ -330,9 +332,9 @@ class login_node(node):
         sn.account=account
         return self.subnode
 
-    def cancel_node(self, job_id:int):
+    def cancel_job(self, job_id:int):
         """
-        Cancel access to nodes given its associated job ID
+        Cancel specified job ID
 
         Reference:
             See `man scancel` for more information on usage
@@ -473,6 +475,7 @@ def main():
     # setup logging
     if args.debug:
         log_filepath = os.path.expanduser("~/hyakvnc.log")
+        print(f"Logging to {log_filepath}...")
         if os.path.exists(log_filepath):
             os.remove(log_filepath)
         logging.basicConfig(filename=log_filepath, level=logging.DEBUG)
@@ -548,7 +551,7 @@ def main():
             logging.info("Already authorized for intracluster access.")
 
     # create login node object
-    hyak = login_node(hostname, args.debug)
+    hyak = LoginNode(hostname, args.debug)
 
     # check for existing subnode
     node_set = hyak.find_node()
@@ -570,7 +573,7 @@ def main():
                     # TODO: kill vnc session
                     #node.kill_vnc(node.vnc_display_number)
                     # kill job
-                    hyak.cancel_node(args.kill_job_id)
+                    hyak.cancel_job(args.kill_job_id)
                     exit(0)
         msg = f"{args.kill_job_id} is not claimed or already killed"
         print(f"Error: {msg}")
@@ -588,11 +591,11 @@ def main():
         hyak.call_command(cmd)
         if node_set is not None:
             for node in node_set:
-                hyak.cancel_node(node.job_id)
+                hyak.cancel_job(node.job_id)
         exit(0)
 
     # set VNC password at user's request or if missing
-    if not hyak.check_vnc_passwd() or args.set_passwd:
+    if not hyak.check_vnc_password() or args.set_passwd:
         if args.debug:
             logging.info("Setting new VNC password...")
         print("Please set new VNC password...")
@@ -624,13 +627,13 @@ def main():
     if subnode is None:
         exit(1)
 
-    print("Node reserved...")
+    print("...Node reserved")
 
     # start vnc
     print("Starting VNC...")
     ret = subnode.start_vnc()
     if not ret:
-        hyak.cancel_node(subnode.job_id)
+        hyak.cancel_job(subnode.job_id)
         exit(1)
 
     # get unused User<->Login port
