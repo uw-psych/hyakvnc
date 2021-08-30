@@ -615,7 +615,9 @@ def main():
     if args.cpus is not None:
         cpus = args.cpus
     if args.mem is not None:
-        mem = args.mem
+        # check format
+        if re.match("[0-9]+[KMGT]", args.mem):
+            mem = args.mem
     if args.account is not None:
         account = args.account
     if args.partition is not None:
@@ -638,11 +640,19 @@ def main():
 
     # get unused User<->Login port
     # CHANGE ME: NOT ROBUST
-    if args.u2h_port is not None:
-        assert hyak.check_port(args.u2h_port)
+    if args.u2h_port is not None and hyak.check_port(args.u2h_port):
         hyak.u2h_port = args.u2h_port
     else:
         hyak.u2h_port = hyak.get_port()
+
+    # quit if port is still bad
+    if hyak.u2h_port is None:
+        msg = "Error: Unable to get port"
+        print(msg)
+        if args.debug:
+            logging.error(msg)
+        hyak.cancel_job(subnode.job_id)
+        exit(1)
 
     if args.debug:
         hyak.print_props()
