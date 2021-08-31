@@ -588,9 +588,9 @@ def main():
             logging.debug(msg)
         # kill all vnc sessions
         cmd = hyak.cmd_prefix + " vncserver -kill :*"
-        hyak.call_command(cmd)
         if node_set is not None:
             for node in node_set:
+                hyak.call_command(cmd)
                 hyak.cancel_job(node.job_id)
         exit(0)
 
