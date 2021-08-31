@@ -389,6 +389,51 @@ class LoginNode(Node):
         cmd = ["ssh", "-N", "-f", "-L", f"{login_port}:127.0.0.1:{subnode_port}", self.subnode.hostname]
         self.run_command(cmd)
 
+    def get_port_forwards(self, nodes=None):
+        """
+        For each node in the SubNodes set `nodes`, get a port map between login
+        node port and subnode port, and then fill `vnc_port` and
+        `vnc_display_number` subnode attributes if None.
+
+        Example:
+          Suppose we have the following VNC sessions (on a single user account):
+            n3000 with a login<->subnode port forward from 5900 to 5901,
+            n3000 with a login<->subnode port forward from 5901 to 5902,
+            n3042 with a login<->subnode port forward from 5903 to 5901.
+
+            This function returns the following:
+              { "n3000" : {5901:5900, 5902:5901}, "n3042" : {5901:5903} }
+
+        Args:
+          nodes = A set of SubNode objects with names to inspect
+
+        Returns a dictionary with node name as keys and
+        LoginNodePort (value) <-> SubNodePort (key) dictionary as value.
+        """
+        node_port_map = dict()
+        if nodes is not None:
+            for node in nodes:
+                if "(" not in node.name:
+                    port_map = dict()
+                    cmd = f"ps aux | grep $USER | grep ssh | grep {node.name}"
+                    proc = self.run_command(cmd)
+                    while proc.poll() is None:
+                        line = str(proc.stdout.readline(), 'utf-8').strip()
+                        pattern = re.compile("""
+                                ([^\s]+(\s)+){10}
+                                (ssh\s-N\s-f\s-L\s(?P<ln_port>[0-9]+):127.0.0.1:(?P<sn_port>[0-9]+))
+                                """, re.VERBOSE)
+                        match = re.match(pattern, line)
+                        if match is not None:
+                            ln_port = int(match.group("ln_port"))
+                            sn_port = int(match.group("sn_port"))
+                            if node.vnc_port is None:
+                                node.vnc_port = sn_port
+                                node.vnc_display_number = sn_port - BASE_VNC_PORT
+                            port_map.update({sn_port:ln_port})
+                    node_port_map.update({node.name:port_map})
+        return node_port_map
+
     def print_props(self):
         """
         Print all properties (including subnode properties)
@@ -442,6 +487,10 @@ def main():
                     dest='mem',
                     help='Sub node memory',
                     type=str)
+    parser.add_argument('--status',
+                    dest='print_status',
+                    action='store_true',
+                    help='Print VNC jobs and other details, and then exit')
     parser.add_argument('--kill',
                     dest='kill_job_id',
                     help='Kill specified VNC session, cancel its VNC job, and exit',
@@ -555,11 +604,26 @@ def main():
 
     # check for existing subnode
     node_set = hyak.find_node()
-    if not args.kill_all and args.kill_job_id is None and not args.force:
+    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
         if node_set is not None:
             for node in node_set:
                 print(f"Error: Found active subnode {node.name} with job ID {node.job_id}")
             exit(1)
+
+    # get port forwards (and display numbers)
+    node_port_map = hyak.get_port_forwards(node_set)
+
+    if args.print_status:
+        print("Active VNC jobs:")
+        if node_set is not None:
+            for node in node_set:
+                print(f"\tJob ID: {node.job_id}")
+                print(f"\t\tSubnode: {node.name}")
+                print(f"\t\tVNC display number: {node.vnc_display_number}")
+                print(f"\t\tVNC port: {node.vnc_port}")
+                print(f"\t\tMapped LoginNode port: {node_port_map[node.name][node.vnc_port]}")
+                # TODO: get time left
+        exit(0)
 
     if args.kill_job_id is not None:
         msg = f"Attempting to kill {args.kill_job_id}"
@@ -569,9 +633,12 @@ def main():
         if node_set is not None:
             for node in node_set:
                 if re.match(str(node.job_id), str(args.kill_job_id)):
-                    logging.info("Found kill target")
-                    # TODO: kill vnc session
-                    #node.kill_vnc(node.vnc_display_number)
+                    if args.debug:
+                        logging.info("Found kill target")
+                        logging.info(f"\tVNC display number: {node.vnc_display_number}")
+                    # kill vnc session
+                    if node.vnc_display_number is not None:
+                        node.kill_vnc(node.vnc_display_number)
                     # kill job
                     hyak.cancel_job(args.kill_job_id)
                     exit(0)
@@ -602,8 +669,6 @@ def main():
         hyak.set_vnc_password()
 
     # TODO: check for existing vnc session
-
-    # TODO: check for port forwards
 
     # reserve node
     res_time = 3 # hours
