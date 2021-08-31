@@ -621,7 +621,8 @@ def main():
                 print(f"\t\tSubnode: {node.name}")
                 print(f"\t\tVNC display number: {node.vnc_display_number}")
                 print(f"\t\tVNC port: {node.vnc_port}")
-                print(f"\t\tMapped LoginNode port: {node_port_map[node.name][node.vnc_port]}")
+                if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
+                    print(f"\t\tMapped LoginNode port: {node_port_map[node.name][node.vnc_port]}")
                 # TODO: get time left
         exit(0)
 
@@ -728,19 +729,19 @@ def main():
 
     # check if port forward succeeded
     time.sleep(2)
-    tmp = hyak.get_port_forwards({subnode})[subnode.name]
-    if tmp[subnode.vnc_port] != hyak.u2h_port:
+    tmp = hyak.get_port_forwards({subnode})
+    if tmp and tmp[subnode.name] and subnode.vnc_port in tmp[subnode.name] and tmp[subnode.name][subnode.vnc_port] == hyak.u2h_port:
+        msg = f"Successfully created port forward"
+        print(msg)
+        if args.debug:
+            logging.info(msg)
+    else:
         msg = f"Error: Failed to create port forward"
         print(msg)
         if args.debug:
             logging.error(msg)
         hyak.cancel_job(subnode.job_id)
         exit(1)
-    else:
-        msg = f"Successfully created port forward"
-        print(msg)
-        if args.debug:
-            logging.info(msg)
 
     # print command to setup User<->Login port forwarding
     print("=====================")
