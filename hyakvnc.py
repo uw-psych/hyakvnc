@@ -37,7 +37,7 @@ import re # for regex
 # - [x] map node<->login port to unused user<->login port
 # - [x] port forward between login<->subnode
 # - [x] print instructions to user to setup user<->login port forwarding
-# - [ ] print time left for node with --status argument
+# - [x] print time left for node with --status argument
 # - [ ] Set vnc settings via file (~/.hyakvnc.conf)
 # - [ ] Write unit tests for functions
 
@@ -434,6 +434,18 @@ class LoginNode(Node):
                     node_port_map.update({node.name:port_map})
         return node_port_map
 
+    def get_time_left(self, job_id:int):
+        """
+        Returns the time remaining for given job ID or None if the job is not
+        present.
+        """
+        cmd = f'squeue -o "%L %.18i %.8j %.8u %R" | grep {os.getlogin()} | grep vnc | grep {job_id}'
+        proc = self.run_command(cmd)
+        if proc.poll() is None:
+            line = str(proc.stdout.readline(), 'utf-8')
+            return line.split(' ', 1)[0]
+        return None
+
     def print_props(self):
         """
         Print all properties (including subnode properties)
@@ -623,7 +635,8 @@ def main():
                 print(f"\t\tVNC port: {node.vnc_port}")
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     print(f"\t\tMapped LoginNode port: {node_port_map[node.name][node.vnc_port]}")
-                # TODO: get time left
+                if hyak.get_time_left(node.job_id):
+                    print(f"\t\tTime left: {hyak.get_time_left(node.job_id)}")
         exit(0)
 
     if args.kill_job_id is not None:
