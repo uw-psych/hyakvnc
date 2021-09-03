@@ -415,22 +415,23 @@ class LoginNode(Node):
             for node in nodes:
                 if "(" not in node.name:
                     port_map = dict()
-                    cmd = f"ps aux | grep $USER | grep ssh | grep {node.name}"
+                    cmd = f"ps aux | grep {os.getlogin()} | grep ssh | grep {node.name}"
                     proc = self.run_command(cmd)
                     while proc.poll() is None:
                         line = str(proc.stdout.readline(), 'utf-8').strip()
-                        pattern = re.compile("""
-                                ([^\s]+(\s)+){10}
-                                (ssh\s-N\s-f\s-L\s(?P<ln_port>[0-9]+):127.0.0.1:(?P<sn_port>[0-9]+))
-                                """, re.VERBOSE)
-                        match = re.match(pattern, line)
-                        if match is not None:
-                            ln_port = int(match.group("ln_port"))
-                            sn_port = int(match.group("sn_port"))
-                            if node.vnc_port is None:
-                                node.vnc_port = sn_port
-                                node.vnc_display_number = sn_port - BASE_VNC_PORT
-                            port_map.update({sn_port:ln_port})
+                        if cmd not in line:
+                            pattern = re.compile("""
+                                    ([^\s]+(\s)+){10}
+                                    (ssh\s-N\s-f\s-L\s(?P<ln_port>[0-9]+):127.0.0.1:(?P<sn_port>[0-9]+))
+                                    """, re.VERBOSE)
+                            match = re.match(pattern, line)
+                            if match is not None:
+                                ln_port = int(match.group("ln_port"))
+                                sn_port = int(match.group("sn_port"))
+                                if node.vnc_port is None:
+                                    node.vnc_port = sn_port
+                                    node.vnc_display_number = sn_port - BASE_VNC_PORT
+                                port_map.update({sn_port:ln_port})
                     node_port_map.update({node.name:port_map})
         return node_port_map
 
@@ -629,13 +630,17 @@ def main():
         print("Active VNC jobs:")
         if node_set is not None:
             for node in node_set:
+                ln_port = None
+                if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
+                    ln_port = node_port_map[node.name][node.vnc_port]
+                time_left = hyak.get_time_left(node.job_id):
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubnode: {node.name}")
                 print(f"\t\tVNC display number: {node.vnc_display_number}")
                 print(f"\t\tVNC port: {node.vnc_port}")
-                if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
+                if ln_port:
                     print(f"\t\tMapped LoginNode port: {node_port_map[node.name][node.vnc_port]}")
-                if hyak.get_time_left(node.job_id):
+                if time_left:
                     print(f"\t\tTime left: {hyak.get_time_left(node.job_id)}")
         exit(0)
 
