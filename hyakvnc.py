@@ -633,15 +633,13 @@ def main():
                 ln_port = None
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     ln_port = node_port_map[node.name][node.vnc_port]
-                time_left = hyak.get_time_left(node.job_id):
+                time_left = hyak.get_time_left(node.job_id)
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubnode: {node.name}")
                 print(f"\t\tVNC display number: {node.vnc_display_number}")
                 print(f"\t\tVNC port: {node.vnc_port}")
-                if ln_port:
-                    print(f"\t\tMapped LoginNode port: {node_port_map[node.name][node.vnc_port]}")
-                if time_left:
-                    print(f"\t\tTime left: {hyak.get_time_left(node.job_id)}")
+                print(f"\t\tMapped LoginNode port: {ln_port}")
+                print(f"\t\tTime left: {time_left}")
         exit(0)
 
     if args.kill_job_id is not None:
