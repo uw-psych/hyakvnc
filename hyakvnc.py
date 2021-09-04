@@ -6,17 +6,76 @@ VERSION = 0.6
 # Created by Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
 # Maintained by ECE TAs
 
-# TODO: Usage Guide
-# Usage: ./hyakvnc.py [-h/--help] [OPTIONS]
-
-# Installing dependencies with containers:
-#   $ singularity shell /gscratch/ece/xfce_singularity/xfce.sif
-#   $ pip3 install --user setuptools
-#   $ pip3 install --user wheel
-#   $ pip3 install --user psutil
+# Quick start guide
 #
-# Or run:
-#   $ ./setup.sh
+# 1. Install python3 dependencies (psutil)
+#    From Login node, run the following
+#      $ ./setup.sh
+#
+# 2. To start VNC session for 5 hours on node with 16 cores and 32GB of memory,
+#    run the following
+#      $ ./hyakvnc.py -t 5 -c 16 --mem 32G
+#      ...
+#      =====================
+#      Run the following in a new terminal window:
+#              ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
+#      then connect to VNC session at localhost:5901
+#      =====================
+#
+#    This should print a command to setup port forwarding. Copy it for the
+#    following step.
+#
+# 3. Set up port forward between your computer and HYAK login node.
+#    On your machine, in a new terminal window, run the the copied command.
+#      $ ./ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
+#
+# 4. Connect to VNC session
+#
+# 5. To close VNC session, run the following
+#      $ ./hyakvnc.py --kill-all
+#
+# 6. Kill port forward process from step 3
+
+
+# Usage: ./hyakvnc.py [-h/--help] [OPTIONS]
+#
+# Options:
+#   -h, --help : print help message and exit
+#
+#   -v, --version : print program version and exit
+#
+#   -d, --debug : [default: disabled] enable debug logging at ~/hyakvnc.log
+#
+#   -f, --force : [default: single VNC job] allow multiple VNC jobs/sessions
+#
+#   -p <part>, --partition <part> : [default: compute-hugemem] Slurm partition
+#
+#   -A <account>, --account <account> : [default: ece] Slurm account
+#
+#   -p <port>, --port <port> : [default: automatically found] override
+#                              User<->LoginNode port
+#
+#   -t <time>, --time <time> : [default: 3] VNC node reservation length in hours
+#
+#   -c <ncpus>, --cpus <ncpus> : [default: 8] VNC node CPU count
+#
+#   --mem <size[units]> : [default: 16G] VNC node memory
+#                         Valid units: K, M, G, T
+#
+#   --status : print details of active VNC jobs and exit. Details include the
+#              following for each active job:
+#                - Job ID
+#                - Subnode name
+#                - VNC display number
+#                - Subnode/VNC port
+#                - User/LoginNode port
+#                - Time left
+#
+#   --kill <job_id> : kill specific job
+#
+#   --kill-all : kill all VNC jobs
+#
+#   --set-passwd : prompt to set VNC password
 #
 
 import argparse # for argument handling
@@ -38,7 +97,7 @@ import re # for regex
 # - [x] port forward between login<->subnode
 # - [x] print instructions to user to setup user<->login port forwarding
 # - [x] print time left for node with --status argument
-# - [ ] Set vnc settings via file (~/.hyakvnc.conf)
+# - [ ] Set vnc settings via file (~/.config/hyakvnc.conf)
 # - [ ] Write unit tests for functions
 
 BASE_VNC_PORT = 5900
