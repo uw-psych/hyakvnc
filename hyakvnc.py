@@ -298,7 +298,7 @@ class LoginNode(Node):
                 #salloc: Nodes n3000 are ready for job
                 pattern = re.compile("""
                         (salloc:\sNodes\s)
-                        (?P<node_name>n[0-9]{4})
+                        (?P<node_name>[ngz][0-9]{4})
                         (\sare\sready\sfor\sjob)
                         """, re.VERBOSE)
                 match = pattern.match(line)
@@ -551,7 +551,7 @@ def main():
 
     # check if running script on login node
     hostname = os.uname()[1]
-    on_subnode = re.match("(n|g)([0-9]{4}).hyak.local", hostname)
+    on_subnode = re.match("[ngz]([0-9]{4}).hyak.local", hostname)
     on_loginnode = hostname in LOGIN_NODE_LIST
     if on_subnode or not on_loginnode:
         msg = "Error: Please run on login node."
