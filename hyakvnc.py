@@ -216,12 +216,12 @@ class LoginNode(Node):
         super().__init__(name, debug)
         self.subnode = None
 
-    def find_node(self):
+    def find_node(self, job_name="vnc"):
         """
         Returns a set of subnodes and returns None otherwise
         """
         ret = set()
-        command = f"squeue | grep {os.getlogin()} | grep vnc"
+        command = f"squeue | grep {os.getlogin()} | grep {job_name}"
         proc = self.run_command(command)
         while True:
             line = str(proc.stdout.readline(), 'utf-8')
@@ -316,7 +316,7 @@ class LoginNode(Node):
         elif isinstance(command, str):
             return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    def reserve_node(self, res_time=3, timeout=10, cpus=8, mem="16G", partition="compute-hugemem", account="ece"):
+    def reserve_node(self, res_time=3, timeout=10, cpus=8, mem="16G", partition="compute-hugemem", account="ece", job_name="vnc"):
         """
         Reserves a node and waits until the node has been acquired.
 
@@ -327,10 +327,11 @@ class LoginNode(Node):
           mem: Amount of memory to allocate (Examples: "8G" for 8GiB of memory)
           partition: Partition name (see `man salloc` on --partition option for more information)
           account: Account name (see `man salloc` on --account option for more information)
+          job_vnc: Slurm job name displayed in `squeue`
 
         Returns SubNode object if it has been acquired successfully and None otherwise.
         """
-        cmd = ["timeout", str(timeout), "salloc", "-J", "vnc", "--no-shell", "--exclusive", "-p", partition,
+        cmd = ["timeout", str(timeout), "salloc", "-J", job_name, "--no-shell", "--exclusive", "-p", partition,
             "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)]
         proc = self.run_command(cmd)
 
@@ -389,6 +390,7 @@ class LoginNode(Node):
         sn.mem=mem
         sn.partition=partition
         sn.account=account
+        sn.job_name=job_name
         return self.subnode
 
     def cancel_job(self, job_id:int):
@@ -494,12 +496,12 @@ class LoginNode(Node):
                     node_port_map.update({node.name:port_map})
         return node_port_map
 
-    def get_time_left(self, job_id:int):
+    def get_time_left(self, job_id:int, job_name="vnc"):
         """
         Returns the time remaining for given job ID or None if the job is not
         present.
         """
-        cmd = f'squeue -o "%L %.18i %.8j %.8u %R" | grep {os.getlogin()} | grep vnc | grep {job_id}'
+        cmd = f'squeue -o "%L %.18i %.8j %.8u %R" | grep {os.getlogin()} | grep {job_name} | grep {job_id}'
         proc = self.run_command(cmd)
         if proc.poll() is None:
             line = str(proc.stdout.readline(), 'utf-8')
@@ -542,6 +544,10 @@ def main():
     parser.add_argument('-A', '--account',
                     dest='account',
                     help='slurm account',
+                    type=str)
+    parser.add_argument('-J',
+                    dest='job_name',
+                    help='slurm job name',
                     type=str)
     parser.add_argument('--port',
                     dest='u2h_port',
@@ -675,7 +681,7 @@ def main():
     hyak = LoginNode(hostname, args.debug)
 
     # check for existing subnode
-    node_set = hyak.find_node()
+    node_set = hyak.find_node(job_name)
     if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
         if node_set is not None:
             for node in node_set:
@@ -692,7 +698,7 @@ def main():
                 ln_port = None
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     ln_port = node_port_map[node.name][node.vnc_port]
-                time_left = hyak.get_time_left(node.job_id)
+                time_left = hyak.get_time_left(node.job_id, job_name)
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubnode: {node.name}")
                 print(f"\t\tVNC display number: {node.vnc_display_number}")
@@ -752,6 +758,7 @@ def main():
     mem = "16G"
     partition = "compute-hugemem"
     account = "ece"
+    job_name = "vnc"
     if args.cpus is not None:
         cpus = args.cpus
     if args.mem is not None:
@@ -762,10 +769,12 @@ def main():
         account = args.account
     if args.partition is not None:
         partition = args.partition
+    if args.job_name is not None:
+        job_name = args.job_name
     if args.time is not None:
         res_time = args.time
     # TODO: allow node count override (harder to implement)
-    subnode = hyak.reserve_node(res_time, timeout, cpus, mem, partition, account)
+    subnode = hyak.reserve_node(res_time, timeout, cpus, mem, partition, account, job_name)
     if subnode is None:
         exit(1)
 
