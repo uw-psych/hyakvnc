@@ -273,6 +273,8 @@ class LoginNode(Node):
                 #            864877 compute-h      vnc  hansem7  R       4:05      1 n3000
                 # or the following if a node is in the process of being acquired
                 #            870400 compute-h      vnc  hansem7 PD       0:00      1 (Resources)
+                # or the following if a node failed to be acquired and needs to be killed
+                #            984669 compute-h      vnc  hansem7 PD       0:00      1 (QOSGrpCpuLimit)
                 pattern = re.compile("""
                         (\s+)
                         (?P<job_id>[0-9]+)
@@ -288,7 +290,16 @@ class LoginNode(Node):
                     proc.kill()
                     msg = f"Warning: Already allocating node with job {job_id}"
                     print(msg)
-                    print("Please try again later or run again with --force argument")
+                    print("Please try again later or run again with '--force' argument")
+                    if self.debug:
+                        logging.info(f"name: {name}")
+                        logging.info(f"job_id: {job_id}")
+                        logging.warning(msg)
+                elif "QOS" in name:
+                    proc.kill()
+                    msg = f"Warning: job {job_id} needs to be killed"
+                    print(msg)
+                    print("Please run this script again with '--kill {job_id}' argument")
                     if self.debug:
                         logging.info(f"name: {name}")
                         logging.info(f"job_id: {job_id}")
