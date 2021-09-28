@@ -375,7 +375,7 @@ class LoginNode(Node):
 
         Returns SubNode object if it has been acquired successfully and None otherwise.
         """
-        cmd = ["timeout", str(timeout), "salloc", "-J", job_name, "--no-shell", "--exclusive", "-p", partition,
+        cmd = ["timeout", str(timeout), "salloc", "-J", job_name, "--no-shell", "-p", partition,
             "-A", account, "-t", str(res_time) + ":00:00", "--mem=" + mem, "-c", str(cpus)]
         proc = self.run_command(cmd)
 
