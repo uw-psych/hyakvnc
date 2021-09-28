@@ -23,14 +23,16 @@ VERSION = 0.7
 #
 # 2. Set up port forward between your computer and HYAK login node.
 #    On your machine, in a new terminal window, run the the copied command.
-#      $ ./ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
+#
+#    In this example, run
+#      $ ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
 #
 # 3. Connect to VNC session
 #
 # 4. To close VNC session, run the following
 #      $ ./hyakvnc.py --kill-all
 #
-# 5. Kill port forward process from step 3
+# 5. Kill port forward process from step 2
 
 
 # Usage: ./hyakvnc.py [-h/--help] [OPTIONS]
