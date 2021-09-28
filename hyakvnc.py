@@ -8,11 +8,7 @@ VERSION = 0.6
 
 # Quick start guide
 #
-# 1. Install python3 dependencies (psutil)
-#    From Login node, run the following
-#      $ ./setup.sh
-#
-# 2. To start VNC session for 5 hours on node with 16 cores and 32GB of memory,
+# 1. To start VNC session for 5 hours on node with 16 cores and 32GB of memory,
 #    run the following
 #      $ ./hyakvnc.py -t 5 -c 16 --mem 32G
 #      ...
@@ -25,16 +21,16 @@ VERSION = 0.6
 #    This should print a command to setup port forwarding. Copy it for the
 #    following step.
 #
-# 3. Set up port forward between your computer and HYAK login node.
+# 2. Set up port forward between your computer and HYAK login node.
 #    On your machine, in a new terminal window, run the the copied command.
 #      $ ./ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
 #
-# 4. Connect to VNC session
+# 3. Connect to VNC session
 #
-# 5. To close VNC session, run the following
+# 4. To close VNC session, run the following
 #      $ ./hyakvnc.py --kill-all
 #
-# 6. Kill port forward process from step 3
+# 5. Kill port forward process from step 3
 
 
 # Usage: ./hyakvnc.py [-h/--help] [OPTIONS]
@@ -81,7 +77,6 @@ VERSION = 0.6
 import argparse # for argument handling
 import logging # for debug logging
 import time # for sleep
-import psutil # for netstat utility
 import os
 import subprocess # for running shell commands
 import re # for regex
@@ -99,6 +94,7 @@ import re # for regex
 # - [x] print time left for node with --status argument
 # - [ ] Set vnc settings via file (~/.config/hyakvnc.conf)
 # - [ ] Write unit tests for functions
+# - [x] Remove psutil dependency
 
 BASE_VNC_PORT = 5900
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
@@ -461,14 +457,16 @@ class LoginNode(Node):
         """
         if self.debug:
             logging.debug(f"Checking if port {port} is used...")
-        netstat = psutil.net_connections()
-        for entry in netstat:
-            # Too verbose
-            #if self.debug:
-            #    logging.debug(f"Checking entry: {entry}")
-            if port == entry[3].port:
-                return False
-        return True
+        cmd = f"netstat -ant | grep LISTEN | grep {port}"
+        proc = self.run_command(cmd)
+        while proc.poll() is None:
+            line = str(proc.stdout.readline(), 'utf-8').strip()
+            print(line)
+            if self.debug:
+                logging.debug(f"netstat line: {line}")
+            if str(port) not in line:
+                return True
+        return False
 
     def get_port(self):
         """
