@@ -151,10 +151,47 @@ class SubNode(Node):
             logging.info(msg)
         return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    # TODO: Find active VNC session
+    def get_vnc_pid(self, hostname, display_number):
+        """
+        Returns pid from file <hostname>:<display_number>.pid or None if file
+        does not exist.
+        """
+        if hostname is None:
+            hostname = self.hostname
+        if display_number is None:
+            display_number = self.vnc_display_number
+        assert(hostname is not None)
+        assert(display_number is not None)
+        filepath = os.path.expanduser(f"~/.vnc/{hostname}:{display_number}.pid")
+        if self.debug:
+            logging.info(f"Opening PID file {filepath}")
+        if os.path.exists(filepath):
+            f = open(filepath, "r")
+            if f is not None:
+                pid = int(f.readline())
+                if self.debug:
+                    logging.info(f"{filepath}: {pid}")
+                f.close()
+                return pid
+        return None
+
     def check_vnc(self):
-        cmd = f"{self.cmd_prefix} vncserver -list"
+        """
+        Returns True if VNC session is active and False otherwise.
+        """
+        assert(self.name is not None)
+        assert(self.job_id is not None)
+        pid = self.get_vnc_pid(self.hostname, self.vnc_display_number)
+        cmd = f"ps -U {os.getlogin()}"
         proc = self.run_command(cmd)
+        while proc.poll() is None:
+            line = str(proc.stdout.readline(), "utf-8").strip()
+            if str(pid) in line:
+                if self.debug:
+                    msg = "Matched line: {line}"
+                    logging.debug(msg)
+                return True
+        return False
 
     def start_vnc(self):
         """
@@ -699,8 +736,10 @@ def main():
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     ln_port = node_port_map[node.name][node.vnc_port]
                 time_left = hyak.get_time_left(node.job_id, job_name)
+                vnc_active = node.check_vnc()
                 print(f"\tJob ID: {node.job_id}")
-                print(f"\t\tSubnode: {node.name}")
+                print(f"\t\tSubNode: {node.name}")
+                print(f"\t\tVNC active: {vnc_active}")
                 print(f"\t\tVNC display number: {node.vnc_display_number}")
                 print(f"\t\tVNC port: {node.vnc_port}")
                 print(f"\t\tMapped LoginNode port: {ln_port}")
@@ -748,8 +787,6 @@ def main():
             logging.info("Setting new VNC password...")
         print("Please set new VNC password...")
         hyak.set_vnc_password()
-
-    # TODO: check for existing vnc session
 
     # reserve node
     res_time = 3 # hours
