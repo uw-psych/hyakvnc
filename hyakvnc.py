@@ -259,7 +259,7 @@ class LoginNode(Node):
                 elif self.debug:
                     msg = f"Found active subnode {name} with job ID {job_id}"
                     logging.debug(msg)
-                tmp = SubNode(name, job_id)
+                tmp = SubNode(name, job_id, self.debug)
                 ret.add(tmp)
         return None
 
