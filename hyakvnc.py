@@ -582,6 +582,15 @@ def check_auth_keys():
     return False
 
 def main():
+    # default node allocation settings
+    res_time = 3 # hours
+    timeout = 120 # seconds
+    cpus = 8
+    mem = "16G"
+    partition = "compute-hugemem"
+    account = "ece"
+    job_name = "vnc"
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--partition',
                     dest='partition',
@@ -798,13 +807,6 @@ def main():
         hyak.set_vnc_password()
 
     # reserve node
-    res_time = 3 # hours
-    timeout = 20 # seconds
-    cpus = 8
-    mem = "16G"
-    partition = "compute-hugemem"
-    account = "ece"
-    job_name = "vnc"
     if args.cpus is not None:
         cpus = args.cpus
     if args.mem is not None:
