@@ -79,6 +79,7 @@ VERSION = 0.7
 import argparse # for argument handling
 import logging # for debug logging
 import time # for sleep
+import signal
 import os
 import subprocess # for running shell commands
 import re # for regex
@@ -382,6 +383,20 @@ class LoginNode(Node):
         proc = self.run_command(cmd)
 
         alloc_stat = False
+
+        def irq_handler(signalNumber, frame):
+            """
+            Pass SIGINT to subprocess and exit program.
+            """
+            if self.debug:
+                msg = f"reserve_node: Caught signal: {signalNumber}"
+                print(msg)
+                logging.info(msg)
+            proc.send_signal(signal.SIGINT)
+            print("Cancelled node allocation. Exiting...")
+            exit(1)
+
+        signal.signal(signal.SIGINT, irq_handler)
 
         print("Allocating node...")
         while proc.poll() is None and not alloc_stat:
