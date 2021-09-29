@@ -621,6 +621,10 @@ def main():
                     dest='job_name',
                     help='slurm job name',
                     type=str)
+    parser.add_argument('--timeout',
+                    dest='timeout',
+                    help='Allocation timeout length (in seconds)',
+                    type=int)
     parser.add_argument('--port',
                     dest='u2h_port',
                     help='User<->Hyak Port',
@@ -838,6 +842,8 @@ def main():
         job_name = args.job_name
     if args.time is not None:
         res_time = args.time
+    if args.timeout is not None:
+        timeout = args.timeout
     # TODO: allow node count override (harder to implement)
     subnode = hyak.reserve_node(res_time, timeout, cpus, mem, partition, account, job_name)
     if subnode is None:
