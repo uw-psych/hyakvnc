@@ -159,18 +159,18 @@ class SubNode(Node):
         if display_number is None:
             display_number = self.vnc_display_number
         assert(hostname is not None)
-        assert(display_number is not None)
-        filepath = os.path.expanduser(f"~/.vnc/{hostname}:{display_number}.pid")
-        if self.debug:
-            logging.info(f"Opening PID file {filepath}")
-        if os.path.exists(filepath):
-            f = open(filepath, "r")
-            if f is not None:
-                pid = int(f.readline())
-                if self.debug:
-                    logging.info(f"{filepath}: {pid}")
-                f.close()
-                return pid
+        if display_number is not None:
+            filepath = os.path.expanduser(f"~/.vnc/{hostname}:{display_number}.pid")
+            if self.debug:
+                logging.info(f"Opening PID file {filepath}")
+            if os.path.exists(filepath):
+                f = open(filepath, "r")
+                if f is not None:
+                    pid = int(f.readline())
+                    if self.debug:
+                        logging.info(f"{filepath}: {pid}")
+                    f.close()
+                    return pid
         return None
 
     def check_vnc(self):
