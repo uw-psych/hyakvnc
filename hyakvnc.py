@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 
+# default node allocation settings
+RES_TIME = 3 # hours
+TIMEOUT = 120 # seconds
+CPUS = 4
+MEM = "8G"
+PARTITION = "compute-hugemem"
+ACCOUNT = "ece"
+JOB_NAME = "vnc"
+
 VERSION = 0.7
 
 # Created by Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
@@ -599,31 +608,26 @@ def check_auth_keys():
     return False
 
 def main():
-    # default node allocation settings
-    res_time = 3 # hours
-    timeout = 120 # seconds
-    cpus = 8
-    mem = "16G"
-    partition = "compute-hugemem"
-    account = "ece"
-    job_name = "vnc"
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--partition',
                     dest='partition',
                     help='slurm partition',
+                    default=PARTITION,
                     type=str)
     parser.add_argument('-A', '--account',
                     dest='account',
                     help='slurm account',
+                    default=ACCOUNT,
                     type=str)
     parser.add_argument('-J',
                     dest='job_name',
                     help='slurm job name',
+                    default=JOB_NAME,
                     type=str)
     parser.add_argument('--timeout',
                     dest='timeout',
                     help='Allocation timeout length (in seconds)',
+                    default=TIMEOUT,
                     type=int)
     parser.add_argument('--port',
                     dest='u2h_port',
@@ -632,14 +636,17 @@ def main():
     parser.add_argument('-t', '--time',
                     dest='time',
                     help='Sub node reservation time (in hours)',
+                    default=RES_TIME,
                     type=int)
     parser.add_argument('-c', '--cpus',
                     dest='cpus',
                     help='Sub node cpu count',
+                    default=CPUS,
                     type=int)
     parser.add_argument('--mem',
                     dest='mem',
                     help='Sub node memory',
+                    default=MEM,
                     type=str)
     parser.add_argument('--status',
                     dest='print_status',
@@ -670,6 +677,9 @@ def main():
                     action='store_true',
                     help='Print program version and exit')
     args = parser.parse_args()
+
+    # check memory format
+    assert(re.match("[0-9]+[KMGT]", args.mem))
 
     if args.print_version:
         print(f"hyakvnc.py {VERSION}")
@@ -757,7 +767,7 @@ def main():
     hyak = LoginNode(hostname, args.debug)
 
     # check for existing subnode
-    node_set = hyak.find_node(job_name)
+    node_set = hyak.find_node(args.job_name)
     if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
         if node_set is not None:
             for node in node_set:
@@ -774,7 +784,7 @@ def main():
                 ln_port = None
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     ln_port = node_port_map[node.name][node.vnc_port]
-                time_left = hyak.get_time_left(node.job_id, job_name)
+                time_left = hyak.get_time_left(node.job_id, args.job_name)
                 vnc_active = node.check_vnc()
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubNode: {node.name}")
@@ -828,24 +838,8 @@ def main():
         hyak.set_vnc_password()
 
     # reserve node
-    if args.cpus is not None:
-        cpus = args.cpus
-    if args.mem is not None:
-        # check format
-        if re.match("[0-9]+[KMGT]", args.mem):
-            mem = args.mem
-    if args.account is not None:
-        account = args.account
-    if args.partition is not None:
-        partition = args.partition
-    if args.job_name is not None:
-        job_name = args.job_name
-    if args.time is not None:
-        res_time = args.time
-    if args.timeout is not None:
-        timeout = args.timeout
     # TODO: allow node count override (harder to implement)
-    subnode = hyak.reserve_node(res_time, timeout, cpus, mem, partition, account, job_name)
+    subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.mem, args.partition, args.account, args.job_name)
     if subnode is None:
         exit(1)
 
