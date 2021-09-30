@@ -490,9 +490,9 @@ class LoginNode(Node):
             print(line)
             if self.debug:
                 logging.debug(f"netstat line: {line}")
-            if str(port) not in line:
-                return True
-        return False
+            if str(port) in line:
+                return False
+        return True
 
     def get_port(self):
         """
