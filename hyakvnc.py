@@ -487,7 +487,6 @@ class LoginNode(Node):
         proc = self.run_command(cmd)
         while proc.poll() is None:
             line = str(proc.stdout.readline(), 'utf-8').strip()
-            print(line)
             if self.debug:
                 logging.debug(f"netstat line: {line}")
             if str(port) in line:
