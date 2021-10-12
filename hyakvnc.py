@@ -564,9 +564,8 @@ class LoginNode(Node):
                             if match is not None:
                                 ln_port = int(match.group("ln_port"))
                                 sn_port = int(match.group("sn_port"))
-                                if node.vnc_port is None:
-                                    node.vnc_port = sn_port
-                                    node.vnc_display_number = sn_port - BASE_VNC_PORT
+                                node.vnc_port = sn_port
+                                node.vnc_display_number = sn_port - BASE_VNC_PORT
                                 port_map.update({sn_port:ln_port})
                     node_port_map.update({node.name:port_map})
         return node_port_map
@@ -786,7 +785,7 @@ def main():
             for node in node_set:
                 ln_port = None
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
-                    ln_port = node_port_map[node.name][node.vnc_port]
+                    ln_port = node_port_map.get(node.name).pop(node.vnc_port)
                 time_left = hyak.get_time_left(node.job_id, args.job_name)
                 vnc_active = node.check_vnc()
                 print(f"\tJob ID: {node.job_id}")
