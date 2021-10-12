@@ -265,9 +265,9 @@ class LoginNode(Node):
         super().__init__(name, debug)
         self.subnode = None
 
-    def find_node(self, job_name="vnc"):
+    def find_nodes(self, job_name="vnc"):
         """
-        Returns a set of subnodes and returns None otherwise
+        Returns a set of subnodes with given job name and returns None otherwise
         """
         ret = set()
         command = f"squeue | grep {os.getlogin()} | grep {job_name}"
@@ -275,7 +275,7 @@ class LoginNode(Node):
         while True:
             line = str(proc.stdout.readline(), 'utf-8')
             if self.debug:
-                logging.debug(f"find_node: {line}")
+                logging.debug(f"find_nodes: {line}")
             if not line:
                 if not ret:
                     return None
@@ -770,7 +770,7 @@ def main():
     hyak = LoginNode(hostname, args.debug)
 
     # check for existing subnode
-    node_set = hyak.find_node(args.job_name)
+    node_set = hyak.find_nodes(args.job_name)
     if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
         if node_set is not None:
             for node in node_set:
