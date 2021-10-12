@@ -142,17 +142,21 @@ class SubNode(Node):
             if self.debug:
                 logging.debug(msg)
 
-    def run_command(self, command:str):
+    def run_command(self, command:str, timeout=None):
         """
         Run command (with arguments) on subnode
 
         Args:
           command:str : command and its arguments to run on subnode
+          timeout : [Default: None] timeout length in seconds
 
         Returns ssh subprocess with stderr->stdout and stdout->PIPE
         """
         assert self.name is not None
         cmd = ["ssh", self.hostname, command]
+        if timeout is not None:
+            cmd.insert(0, "timeout")
+            cmd.insert(1, str(timeout))
         if self.debug:
             msg = f"Running on {self.name}: {cmd}"
             print(msg)
@@ -208,8 +212,8 @@ class SubNode(Node):
         Returns True if VNC session was started successfully and False otherwise
         """
         timer = 15
-        vnc_cmd = f"timeout {timer} {self.cmd_prefix} vncserver -xstartup {XSTARTUP_FILEPATH} -baseHttpPort {BASE_VNC_PORT} -depth 24 &"
-        proc = self.run_command(vnc_cmd)
+        vnc_cmd = f"{self.cmd_prefix} vncserver -xstartup {XSTARTUP_FILEPATH} -baseHttpPort {BASE_VNC_PORT} -depth 24 &"
+        proc = self.run_command(vnc_cmd, timeout=timer)
 
         # get display number and port number
         while proc.poll() is None:
