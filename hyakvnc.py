@@ -781,7 +781,7 @@ def main():
     node_port_map = hyak.get_port_forwards(node_set)
 
     if args.print_status:
-        print("Active VNC jobs:")
+        print(f"Active {args.job_name} jobs:")
         if node_set is not None:
             for node in node_set:
                 ln_port = None
@@ -822,7 +822,7 @@ def main():
         exit(1)
 
     if args.kill_all:
-        msg = "Killing all VNC sessions..."
+        msg = f"Killing all VNC sessions with job name {args.job_name}..."
         print(msg)
         if args.debug:
             logging.debug(msg)
