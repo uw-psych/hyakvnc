@@ -850,6 +850,24 @@ def main():
 
     print(f"...Node {subnode.name} reserved")
 
+    def __irq_handler__(signalNumber, frame):
+        """
+        Cancel job and exit program.
+        """
+        if args.debug:
+            msg = f"main: Caught signal: {signalNumber}"
+            print(msg)
+            logging.info(msg)
+        print("Cancelling job...")
+        hyak.cancel_job(subnode.job_id)
+        print("Exiting...")
+        exit(1)
+
+    # Cancel job and exit when SIGINT (CTRL+C) or SIGTSTP (CTRL+Z) signals are
+    # detected.
+    signal.signal(signal.SIGINT, __irq_handler__)
+    signal.signal(signal.SIGTSTP, __irq_handler__)
+
     # start vnc
     print("Starting VNC...")
     ret = subnode.start_vnc()
