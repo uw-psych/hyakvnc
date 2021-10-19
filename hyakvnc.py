@@ -397,7 +397,7 @@ class LoginNode(Node):
 
         alloc_stat = False
 
-        def irq_handler(signalNumber, frame):
+        def __reserve_node_irq_handler__(signalNumber, frame):
             """
             Pass SIGINT to subprocess and exit program.
             """
@@ -409,7 +409,10 @@ class LoginNode(Node):
             print("Cancelled node allocation. Exiting...")
             exit(1)
 
-        signal.signal(signal.SIGINT, irq_handler)
+        # Stop allocation when  SIGINT (CTRL+C) and SIGTSTP (CTRL+Z) signals
+        # are detected.
+        signal.signal(signal.SIGINT, __reserve_node_irq_handler__)
+        signal.signal(signal.SIGTSTP, __reserve_node_irq_handler__)
 
         print("Allocating node...")
         while proc.poll() is None and not alloc_stat:
