@@ -848,7 +848,7 @@ def main():
     if subnode is None:
         exit(1)
 
-    print("...Node reserved")
+    print(f"...Node {subnode.name} reserved")
 
     # start vnc
     print("Starting VNC...")
