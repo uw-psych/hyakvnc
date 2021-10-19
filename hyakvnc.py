@@ -128,7 +128,7 @@ class SubNode(Node):
     def __init__(self, name, job_id, debug=False):
         assert os.path.exists(AUTH_KEYS_FILEPATH)
         super().__init__(name, debug)
-        self.hostname = name + ".hyak.local"
+        self.hostname = f"{name}.hyak.local"
         self.job_id = job_id
         self.vnc_display_number = None
         self.vnc_port = None
@@ -200,7 +200,7 @@ class SubNode(Node):
             line = str(proc.stdout.readline(), "utf-8").strip()
             if str(pid) in line:
                 if self.debug:
-                    msg = "Matched line: {line}"
+                    msg = f"Matched line: {line}"
                     logging.debug(msg)
                 return True
         return False
@@ -250,11 +250,11 @@ class SubNode(Node):
             target = ":*"
         else:
             assert display_number is not None
-            target = ":" + str(display_number)
+            target = f":{display_number}"
         if self.debug:
             print(f"Attempting to kill VNC session {target}")
             logging.debug(f"Attempting to kill VNC session {target}")
-        cmd = self.cmd_prefix + " vncserver -kill " + target
+        cmd = f"{self.cmd_prefix} vncserver -kill {target}"
         self.run_command(cmd)
 
 class LoginNode(Node):
@@ -333,7 +333,7 @@ class LoginNode(Node):
         """
         Set VNC password
         """
-        cmd = self.cmd_prefix + " vncpasswd"
+        cmd = f"{self.cmd_prefix} vncpasswd"
         self.call_command(cmd)
 
     def call_command(self, command:str):
