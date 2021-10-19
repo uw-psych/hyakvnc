@@ -10,7 +10,7 @@ PARTITION = "compute-hugemem"
 ACCOUNT = "ece"
 JOB_NAME = "vnc"
 
-VERSION = 0.7
+VERSION = 0.8
 
 # Created by Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
 # Maintained by ECE TAs
