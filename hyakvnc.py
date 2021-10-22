@@ -36,7 +36,7 @@ VERSION = 0.8
 #    In this example, run
 #      $ ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
 #
-# 3. Connect to VNC session
+# 3. Connect to VNC session at instructed address (in example: localhost:5901)
 #
 # 4. To close VNC session, run the following
 #      $ ./hyakvnc.py --kill-all
@@ -107,6 +107,10 @@ import re # for regex
 # - [ ] Set vnc settings via file (~/.config/hyakvnc.conf)
 # - [ ] Write unit tests for functions
 # - [x] Remove psutil dependency
+# - [x] Handle SIGINT and SIGTSTP signals
+# - [ ] user argument to reset VNC session of active node
+# - [ ] Specify singularity container to run
+# - [ ] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
 
 BASE_VNC_PORT = 5900
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
@@ -559,6 +563,8 @@ class LoginNode(Node):
                     while proc.poll() is None:
                         line = str(proc.stdout.readline(), 'utf-8').strip()
                         if cmd not in line:
+                            # Match against pattern:
+                            #hansem7  2772462  0.0  0.0 286052   964 ?        Ss   00:53   0:00 ssh -N -f -L 5900:127.0.0.1:5901 n3000.hyak.local
                             pattern = re.compile("""
                                     ([^\s]+(\s)+){10}
                                     (ssh\s-N\s-f\s-L\s(?P<ln_port>[0-9]+):127.0.0.1:(?P<sn_port>[0-9]+))
