@@ -791,6 +791,7 @@ def main():
                     ln_port = node_port_map.get(node.name).pop(node.vnc_port)
                 time_left = hyak.get_time_left(node.job_id, args.job_name)
                 vnc_active = node.check_vnc()
+                msg = f"ssh -N -f -L {ln_port}:127.0.0.1:{ln_port} {os.getlogin()}@klone.hyak.uw.edu"
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubNode: {node.name}")
                 print(f"\t\tVNC active: {vnc_active}")
@@ -798,6 +799,8 @@ def main():
                 print(f"\t\tVNC port: {node.vnc_port}")
                 print(f"\t\tMapped LoginNode port: {ln_port}")
                 print(f"\t\tTime left: {time_left}")
+                if ln_port is not None:
+                    print(f"\t\tRun command: {msg}")
         exit(0)
 
     if args.kill_job_id is not None:
