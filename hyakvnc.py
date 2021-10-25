@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: MIT
 
 # default node allocation settings
-RES_TIME = 3 # hours
+RES_TIME = 4 # hours
 TIMEOUT = 120 # seconds
-CPUS = 4
-MEM = "8G"
+CPUS = 8
+MEM = "16G"
 PARTITION = "compute-hugemem"
 ACCOUNT = "ece"
-JOB_NAME = "vnc"
+JOB_NAME = "ece_vnc"
 
 VERSION = 0.8
 
