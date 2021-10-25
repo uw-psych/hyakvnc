@@ -418,7 +418,7 @@ class LoginNode(Node):
         signal.signal(signal.SIGINT, __reserve_node_irq_handler__)
         signal.signal(signal.SIGTSTP, __reserve_node_irq_handler__)
 
-        print("Allocating node...")
+        print(f"Allocating node with {cpus} CPUs and {mem} RAM for {res_time} hours...")
         while proc.poll() is None and not alloc_stat:
             print("...")
             line = str(proc.stdout.readline(), 'utf-8').strip()
@@ -857,7 +857,7 @@ def main():
     if subnode is None:
         exit(1)
 
-    print(f"...Node {subnode.name} reserved")
+    print(f"...Node {subnode.name} reserved with Job ID: {subnode.job_id}")
 
     def __irq_handler__(signalNumber, frame):
         """
