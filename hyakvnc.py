@@ -10,7 +10,7 @@ PARTITION = "compute-hugemem"
 ACCOUNT = "ece"
 JOB_NAME = "ece_vnc"
 
-VERSION = 0.8
+VERSION = 0.9
 
 # Created by Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
 # Maintained by ECE TAs
@@ -51,13 +51,16 @@ VERSION = 0.8
 #
 #   -v, --version : print program version and exit
 #
-#   -d, --debug : [default: disabled] enable debug logging at ~/hyakvnc.log
+#   -d, --debug : [default: disabled] show debug messages and enable debug
+#                 logging at ~/hyakvnc.log
 #
 #   -f, --force : [default: single VNC job] allow multiple VNC jobs/sessions
 #
 #   -p <part>, --partition <part> : [default: compute-hugemem] Slurm partition
 #
 #   -A <account>, --account <account> : [default: ece] Slurm account
+#
+#   -J <job_name> : [default: ece_vnc] Slurm job name
 #
 #   -p <port>, --port <port> : [default: automatically found] override
 #                              User<->LoginNode port
@@ -73,14 +76,16 @@ VERSION = 0.8
 #              following for each active job:
 #                - Job ID
 #                - Subnode name
+#                - VNC session status
 #                - VNC display number
 #                - Subnode/VNC port
 #                - User/LoginNode port
 #                - Time left
+#                - SSH port forward command
 #
 #   --kill <job_id> : kill specific job
 #
-#   --kill-all : kill all VNC jobs
+#   --kill-all : kill all VNC jobs with targeted Slurm job name
 #
 #   --set-passwd : prompt to set VNC password
 #
@@ -88,8 +93,8 @@ VERSION = 0.8
 import argparse # for argument handling
 import logging # for debug logging
 import time # for sleep
-import signal
-import os
+import signal # for signal handling
+import os # for path, file/dir checking, hostname
 import subprocess # for running shell commands
 import re # for regex
 
@@ -368,7 +373,7 @@ class LoginNode(Node):
         Args:
           command : command and its arguments to run on subnode
 
-        Returns ssh subprocess with stderr->stdout and stdout->PIPE
+        Returns subprocess with stderr->stdout and stdout->PIPE
         """
         assert command is not None
         if self.debug:
