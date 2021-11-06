@@ -425,11 +425,13 @@ class LoginNode(Node):
             if self.debug:
                 msg = f"reserve_node: {line}"
                 logging.debug(msg)
-            if "Granted job allocation" in line:
+            if "Granted job allocation" in line or "has been allocated resources" in line:
                 # match against pattern:
                 #salloc: Granted job allocation 864875
+                #salloc: job 1501435 has been allocated resources
                 pattern = re.compile("""
-                        (salloc:\sGranted\sjob\sallocation\s)
+                        (salloc:\s)
+                        ((Granted\sjob\sallocation\s)|(job\s))
                         (?P<job_id>[0-9]+)
                         """, re.VERBOSE)
                 match = pattern.match(line)
