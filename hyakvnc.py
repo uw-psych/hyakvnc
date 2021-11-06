@@ -87,7 +87,7 @@ VERSION = 0.9
 #
 #   --kill-all : kill all VNC jobs with targeted Slurm job name
 #
-#   --set-passwd : prompt to set VNC password
+#   --set-passwd : prompt to set VNC password and exit
 #
 
 import argparse # for argument handling
@@ -682,7 +682,7 @@ def main():
     parser.add_argument('--set-passwd',
                     dest='set_passwd',
                     action='store_true',
-                    help='Prompts for new VNC password')
+                    help='Prompts for new VNC password and exit')
     parser.add_argument('-d', '--debug',
                     dest='debug',
                     action='store_true',
@@ -785,6 +785,15 @@ def main():
     # create login node object
     hyak = LoginNode(hostname, args.debug)
 
+    # set VNC password at user's request or if missing
+    if not hyak.check_vnc_password() or args.set_passwd:
+        if args.debug:
+            logging.info("Setting new VNC password...")
+        print("Please set new VNC password...")
+        hyak.set_vnc_password()
+        if args.set_passwd:
+            exit(0)
+
     # check for existing subnode
     node_set = hyak.find_nodes(args.job_name)
     if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
@@ -851,13 +860,6 @@ def main():
                 node.kill_vnc()
                 hyak.cancel_job(node.job_id)
         exit(0)
-
-    # set VNC password at user's request or if missing
-    if not hyak.check_vnc_password() or args.set_passwd:
-        if args.debug:
-            logging.info("Setting new VNC password...")
-        print("Please set new VNC password...")
-        hyak.set_vnc_password()
 
     # reserve node
     # TODO: allow node count override (harder to implement)
