@@ -116,6 +116,8 @@ import re # for regex
 # - [ ] user argument to reset VNC session of active node
 # - [ ] Specify singularity container to run
 # - [ ] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
+# - [ ] Use pyslurm to interface with Slurm: https://github.com/PySlurm/pyslurm
+# - [ ] Delete ~/.ssh/known_hosts before ssh'ing into subnode
 
 BASE_VNC_PORT = 5900
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
@@ -406,6 +408,8 @@ class LoginNode(Node):
         proc = self.run_command(cmd)
 
         alloc_stat = False
+        subnode_job_id = None
+        subnode_name = None
 
         def __reserve_node_irq_handler__(signalNumber, frame):
             """
@@ -431,13 +435,14 @@ class LoginNode(Node):
             if self.debug:
                 msg = f"reserve_node: {line}"
                 logging.debug(msg)
-            if "Granted job allocation" in line or "has been allocated resources" in line:
+            if "Pending" in line or "Granted" in line:
                 # match against pattern:
+                #salloc: Pending job allocation 864875
                 #salloc: Granted job allocation 864875
-                #salloc: job 1501435 has been allocated resources
                 pattern = re.compile("""
                         (salloc:\s)
-                        ((Granted\sjob\sallocation\s)|(job\s))
+                        ((Granted)|(Pending))
+                        (\sjob\sallocation\s)
                         (?P<job_id>[0-9]+)
                         """, re.VERBOSE)
                 match = pattern.match(line)
@@ -464,11 +469,26 @@ class LoginNode(Node):
             proc.stderr.close()
 
         if not alloc_stat:
-            msg = "Error: node allocation timed out."
-            print(msg)
-            if self.debug:
-                logging.error(msg)
-            return None
+            # check if node actually got reserved
+            # Background: Sometimes salloc does not print allocated node names
+            #             at the end, so we have to check with squeue
+            if subnode_job_id is not None:
+                tmp_nodes = self.find_nodes(job_name)
+                for tmp_node in tmp_nodes:
+                    if self.debug:
+                        logging.debug(f"reserve_node: fallback: Checking {tmp_node.name} with Job ID {tmp_node.job_id}")
+                    if tmp_node.job_id == subnode_job_id:
+                        if self.debug:
+                            logging.debug(f"reserve_node: fallback: Match found")
+                        # get subnode name
+                        subnode_name = tmp_node.name
+                        break
+            if subnode_name is None:
+                msg = "Error: node allocation timed out."
+                print(msg)
+                if self.debug:
+                    logging.error(msg)
+                return None
 
         assert subnode_job_id is not None
         assert subnode_name is not None
