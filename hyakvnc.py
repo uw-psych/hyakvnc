@@ -90,6 +90,15 @@ VERSION = 1.0
 #   --set-passwd : prompt to set VNC password and exit
 #
 
+# Dependencies:
+# - Python 3.6 or newer
+# - Singularity 3.7
+# - Slurm
+# - netstat utility
+# - XFCE container:
+#   - xfce4
+#   - tigervnc with vncserver
+
 import argparse # for argument handling
 import logging # for debug logging
 import time # for sleep
@@ -115,27 +124,75 @@ import re # for regex
 # - [x] Handle SIGINT and SIGTSTP signals
 # - [ ] user argument to reset VNC session of active node
 # - [ ] Specify singularity container to run
-# - [ ] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
+# - [x] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
 # - [ ] Use pyslurm to interface with Slurm: https://github.com/PySlurm/pyslurm
 # - [x] Delete ~/.ssh/known_hosts before ssh'ing into subnode
+# - [ ] Replace netstat with ss
+# - [ ] Create and use singularity instance. Then share instructions to enter instance.
+# - [ ] Delete /tmp/.X11-unix/X<DISPLAY_NUMBER> if display number is not used on subnode
+#       Info: This can cause issues for vncserver (tigervnc)
+# - [ ] Add singularity to $PATH if missing.
+# - [ ] Remove stale VNC processes
+# - [ ] Add user argument to restart container instance
 
+# Base VNC port cannot be changed due to vncserver not having a stable argument
+# interface:
 BASE_VNC_PORT = 5900
+
+# List of Klone login nodes
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
+
+# Full path to Singularity binary
 SINGULARITY_BIN = "/opt/ohpc/pub/libs/singularity/3.7.1/bin/singularity"
+
+# Singularity container with XFCE + vncserver (tigervnc)
 XFCE_CONTAINER = "/gscratch/ece/xfce_singularity/xfce.sif"
+
+# Script used to start desktop environment (XFCE)
 XSTARTUP_FILEPATH = "/gscratch/ece/xfce_singularity/xstartup"
+
+# Checked to see if klone is authorized for intracluster access
 AUTH_KEYS_FILEPATH = os.path.expanduser("~/.ssh/authorized_keys")
+
+# Singularity bindpaths can be overwritten if $SINGULARITY_BINDPATH is defined.
+# Bindpaths are used to mount storage paths to containerized environment.
 SINGULARITY_BINDPATH = os.getenv("SINGULARITY_BINDPATH")
 if SINGULARITY_BINDPATH is None:
     SINGULARITY_BINDPATH = "/tmp:/tmp,$HOME,$PWD,/gscratch,/opt:/opt,/:/hyak_root"
 
 class Node:
+    """
+    The Node class has the following initial data: bool: debug, string: name,
+    string: sing_exec.
+
+    debug: Print and log debug messages if True.
+    name: Shortened hostname of node.
+    sing_exec: Add before command to execute inside a singularity container
+    """
+
     def __init__(self, name, debug=False):
         self.debug = debug
         self.name = name
-        self.cmd_prefix = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {XFCE_CONTAINER}"
+        self.sing_exec = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {XFCE_CONTAINER}"
 
 class SubNode(Node):
+    """
+    The SubNode class specifies a node requested via Slurm (also known as work
+    or interactive node). SubNode class is initialized with the following:
+    bool: debug, string: name, string: sing_exec, string: hostname, int: job_id.
+
+    SubNode class with active VNC session may contain vnc_display_number and
+    vnc_port.
+
+    debug: Print and log debug messages if True.
+    name: Shortened subnode hostname (e.g. n3000) described inside `/etc/hosts`.
+    hostname: Full subnode hostname (e.g. n3000.hyak.local).
+    job_id: Slurm Job ID that allocated the node.
+    vnc_display_number: X display number used for VNC session.
+    vnc_port: vnc_display_number + BASE_VNC_PORT.
+    sing_exec: Add before command to execute inside singularity container.
+    """
+
     def __init__(self, name, job_id, debug=False):
         assert os.path.exists(AUTH_KEYS_FILEPATH)
         super().__init__(name, debug)
@@ -145,7 +202,10 @@ class SubNode(Node):
         self.vnc_port = None
 
     def print_props(self):
-        print("Subnode properties:")
+        """
+        Print properties of SubNode object.
+        """
+        print("SubNode properties:")
         props = vars(self)
         for item in props:
             msg = f"{item} : {props[item]}"
@@ -211,7 +271,7 @@ class SubNode(Node):
             line = str(proc.stdout.readline(), "utf-8").strip()
             if str(pid) in line:
                 if self.debug:
-                    msg = f"Matched line: {line}"
+                    msg = f"Matched PID in line: {line}"
                     logging.debug(msg)
                 return True
         return False
@@ -223,7 +283,7 @@ class SubNode(Node):
         Returns True if VNC session was started successfully and False otherwise
         """
         timer = 15
-        vnc_cmd = f"{self.cmd_prefix} vncserver -xstartup {XSTARTUP_FILEPATH} &"
+        vnc_cmd = f"{self.sing_exec} vncserver -xstartup {XSTARTUP_FILEPATH} &"
         proc = self.run_command(vnc_cmd, timeout=timer)
 
         # get display number and port number
@@ -270,6 +330,11 @@ class SubNode(Node):
         self.run_command(cmd)
 
 class LoginNode(Node):
+    """
+    The LoginNode class specifies Hyak login node for its Slurm and SSH
+    capabilities.
+    """
+
     def __init__(self, name, debug=False):
         assert os.path.exists(XSTARTUP_FILEPATH)
         assert os.path.exists(SINGULARITY_BIN)
@@ -324,7 +389,7 @@ class LoginNode(Node):
                     proc.kill()
                     msg = f"Warning: job {job_id} needs to be killed"
                     print(msg)
-                    print("Please run this script again with '--kill {job_id}' argument")
+                    print(f"Please run this script again with '--kill {job_id}' argument")
                     if self.debug:
                         logging.info(f"name: {name}")
                         logging.info(f"job_id: {job_id}")
@@ -346,7 +411,7 @@ class LoginNode(Node):
         """
         Set VNC password
         """
-        cmd = f"{self.cmd_prefix} vncpasswd"
+        cmd = f"{self.sing_exec} vncpasswd"
         self.call_command(cmd)
 
     def call_command(self, command:str):
@@ -400,7 +465,7 @@ class LoginNode(Node):
           mem: Amount of memory to allocate (Examples: "8G" for 8GiB of memory)
           partition: Partition name (see `man salloc` on --partition option for more information)
           account: Account name (see `man salloc` on --account option for more information)
-          job_vnc: Slurm job name displayed in `squeue`
+          job_name: Slurm job name displayed in `squeue`
 
         Returns SubNode object if it has been acquired successfully and None otherwise.
         """
@@ -497,14 +562,14 @@ class LoginNode(Node):
 
         assert subnode_job_id is not None
         assert subnode_name is not None
-        sn = self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
-        sn.res_time=res_time
-        sn.timeout=timeout
-        sn.cpus=cpus
-        sn.mem=mem
-        sn.partition=partition
-        sn.account=account
-        sn.job_name=job_name
+        self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
+        self.subnode.res_time=res_time
+        self.subnode.timeout=timeout
+        self.subnode.cpus=cpus
+        self.subnode.mem=mem
+        self.subnode.partition=partition
+        self.subnode.account=account
+        self.subnode.job_name=job_name
         return self.subnode
 
     def cancel_job(self, job_id:int):
@@ -541,6 +606,7 @@ class LoginNode(Node):
         """
         Returns unused port number if found and None if not found.
         """
+        # 300 is arbitrary limit
         for i in range(0,300):
             port = BASE_VNC_PORT + i
             if self.check_port(port):
@@ -581,7 +647,7 @@ class LoginNode(Node):
               { "n3000" : {5901:5900, 5902:5901}, "n3042" : {5901:5903} }
 
         Args:
-          nodes = A set of SubNode objects with names to inspect
+          nodes : A set of SubNode objects with names to inspect
 
         Returns a dictionary with node name as keys and
         LoginNodePort (value) <-> SubNodePort (key) dictionary as value.
@@ -729,7 +795,7 @@ def main():
         print(f"hyakvnc.py {VERSION}")
         exit(0)
 
-    # setup logging
+    # Debug: setup logging
     if args.debug:
         log_filepath = os.path.expanduser("~/hyakvnc.log")
         print(f"Logging to {log_filepath}...")
@@ -737,6 +803,7 @@ def main():
             os.remove(log_filepath)
         logging.basicConfig(filename=log_filepath, level=logging.DEBUG)
 
+    # Debug: print passed arguments
     if args.debug:
         print("Arguments:")
         for item in vars(args):
@@ -826,7 +893,7 @@ def main():
         if args.set_passwd:
             exit(0)
 
-    # check for existing subnode
+    # check for existing subnodes with same job name
     node_set = hyak.find_nodes(args.job_name)
     if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
         if node_set is not None:
@@ -835,9 +902,11 @@ def main():
             exit(1)
 
     # get port forwards (and display numbers)
+    # TODO: accurately map VNC display number and port to Slurm job
     node_port_map = hyak.get_port_forwards(node_set)
 
     if args.print_status:
+        # print VNC job details with same job name and quit
         print(f"Active {args.job_name} jobs:")
         if node_set is not None:
             for node in node_set:
@@ -859,11 +928,13 @@ def main():
         exit(0)
 
     if args.kill_job_id is not None:
+        # kill single VNC job with same job name
         msg = f"Attempting to kill {args.kill_job_id}"
         print(msg)
         if args.debug:
             logging.info(msg)
         if node_set is not None:
+            # find target job (with same job name) and quit
             for node in node_set:
                 if re.match(str(node.job_id), str(args.kill_job_id)):
                     if args.debug:
@@ -872,7 +943,7 @@ def main():
                     # kill vnc session
                     if node.vnc_display_number is not None:
                         node.kill_vnc(node.vnc_display_number)
-                    # kill job
+                    # cancel job
                     hyak.cancel_job(args.kill_job_id)
                     exit(0)
         msg = f"{args.kill_job_id} is not claimed or already killed"
@@ -882,14 +953,16 @@ def main():
         exit(1)
 
     if args.kill_all:
+        # kill all VNC jobs with same job name
         msg = f"Killing all VNC sessions with job name {args.job_name}..."
         print(msg)
         if args.debug:
             logging.debug(msg)
-        # kill all vnc sessions
         if node_set is not None:
             for node in node_set:
+                # kill all vnc sessions
                 node.kill_vnc()
+                # cancel job
                 hyak.cancel_job(node.job_id)
         exit(0)
 
