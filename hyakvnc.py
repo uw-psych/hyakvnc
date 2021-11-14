@@ -117,7 +117,7 @@ import re # for regex
 # - [ ] Specify singularity container to run
 # - [ ] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
 # - [ ] Use pyslurm to interface with Slurm: https://github.com/PySlurm/pyslurm
-# - [ ] Delete ~/.ssh/known_hosts before ssh'ing into subnode
+# - [x] Delete ~/.ssh/known_hosts before ssh'ing into subnode
 
 BASE_VNC_PORT = 5900
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
@@ -806,6 +806,13 @@ def main():
     else:
         if args.debug:
             logging.info("Already authorized for intracluster access.")
+
+    # delete ~/.ssh/known_hosts in case Hyak maintenance causes node identity
+    # mismatch. This can break ssh connection to subnode and cause port
+    # forwarding to subnode to fail.
+    ssh_known_hosts = os.path.expanduser("~/.ssh/known_hosts")
+    if os.path.exists(ssh_known_hosts):
+        os.remove(ssh_known_hosts)
 
     # create login node object
     hyak = LoginNode(hostname, args.debug)
