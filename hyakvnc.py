@@ -951,8 +951,7 @@ def main():
 
     # check if port forward succeeded
     time.sleep(2)
-    tmp = hyak.get_port_forwards({subnode})
-    if tmp and tmp[subnode.name] and subnode.vnc_port in tmp[subnode.name] and tmp[subnode.name][subnode.vnc_port] == hyak.u2h_port:
+    if not hyak.check_port(hyak.u2h_port):
         msg = f"Successfully created port forward"
         print(msg)
         if args.debug:
