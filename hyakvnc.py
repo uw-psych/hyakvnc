@@ -10,7 +10,7 @@ PARTITION = "compute-hugemem"
 ACCOUNT = "ece"
 JOB_NAME = "ece_vnc"
 
-VERSION = 0.9
+VERSION = 1.0
 
 # Created by Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
 # Maintained by ECE TAs
@@ -655,17 +655,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--partition',
                     dest='partition',
-                    help='slurm partition',
+                    help='Slurm partition',
                     default=PARTITION,
                     type=str)
     parser.add_argument('-A', '--account',
                     dest='account',
-                    help='slurm account',
+                    help='Slurm account',
                     default=ACCOUNT,
                     type=str)
     parser.add_argument('-J',
                     dest='job_name',
-                    help='slurm job name',
+                    help='Slurm job name',
                     default=JOB_NAME,
                     type=str)
     parser.add_argument('--timeout',
@@ -679,17 +679,17 @@ def main():
                     type=int)
     parser.add_argument('-t', '--time',
                     dest='time',
-                    help='Sub node reservation time (in hours)',
+                    help='Subnode reservation time (in hours)',
                     default=RES_TIME,
                     type=int)
     parser.add_argument('-c', '--cpus',
                     dest='cpus',
-                    help='Sub node cpu count',
+                    help='Subnode cpu count',
                     default=CPUS,
                     type=int)
     parser.add_argument('--mem',
                     dest='mem',
-                    help='Sub node memory',
+                    help='Subnode memory',
                     default=MEM,
                     type=str)
     parser.add_argument('--status',
