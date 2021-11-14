@@ -446,7 +446,8 @@ class LoginNode(Node):
                         (?P<job_id>[0-9]+)
                         """, re.VERBOSE)
                 match = pattern.match(line)
-                subnode_job_id = match.group("job_id")
+                if match is not None:
+                    subnode_job_id = match.group("job_id")
             elif "are ready for job" in line:
                 # match against pattern:
                 #salloc: Nodes n3000 are ready for job
@@ -456,9 +457,10 @@ class LoginNode(Node):
                         (\sare\sready\sfor\sjob)
                         """, re.VERBOSE)
                 match = pattern.match(line)
-                subnode_name = match.group("node_name")
-                alloc_stat = True
-                break
+                if match is not None:
+                    subnode_name = match.group("node_name")
+                    alloc_stat = True
+                    break
             elif self.debug:
                 msg = f"Skipping line: {line}"
                 print(msg)
@@ -483,6 +485,8 @@ class LoginNode(Node):
                         # get subnode name
                         subnode_name = tmp_node.name
                         break
+            else:
+                return None
             if subnode_name is None:
                 msg = "Error: node allocation timed out."
                 print(msg)
