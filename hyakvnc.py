@@ -302,7 +302,8 @@ class LoginNode(Node):
                 pattern = re.compile("""
                         (\s+)
                         (?P<job_id>[0-9]+)
-                        (\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+[^ ]+\s+)
+                        (\s+[^ ]+){6}
+                        (\s+)
                         (?P<subnode_name>[^\s]+)
                         """, re.VERBOSE)
                 match = pattern.match(line)
