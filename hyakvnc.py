@@ -103,6 +103,8 @@ import argparse # for argument handling
 import logging # for debug logging
 import time # for sleep
 import signal # for signal handling
+import glob
+import pwd
 import os # for path, file/dir checking, hostname
 import subprocess # for running shell commands
 import re # for regex
@@ -129,10 +131,11 @@ import re # for regex
 # - [x] Delete ~/.ssh/known_hosts before ssh'ing into subnode
 # - [ ] Replace netstat with ss
 # - [ ] Create and use singularity instance. Then share instructions to enter instance.
-# - [ ] Delete /tmp/.X11-unix/X<DISPLAY_NUMBER> if display number is not used on subnode
+# - [x] Delete /tmp/.X11-unix/X<DISPLAY_NUMBER> if display number is not used on subnode
 #       Info: This can cause issues for vncserver (tigervnc)
+# - [x] Delete all owned socket files in /tmp/.ICE-unix/
 # - [ ] Add singularity to $PATH if missing.
-# - [ ] Remove stale VNC processes
+# - [x] Remove stale VNC processes
 # - [ ] Add user argument to restart container instance
 
 # Base VNC port cannot be changed due to vncserver not having a stable argument
@@ -314,20 +317,155 @@ class SubNode(Node):
         print("start_vnc: Error: Timed out...")
         return False
 
+    def list_vnc(self):
+        """
+        Returns a list of active and stale vnc sessions on subnode.
+        """
+        active = list()
+        stale = list()
+        cmd = f"{self.sing_exec} vncserver -list"
+        proc = self.run_command(cmd)
+        skip = True
+        while proc.poll() is None:
+            line = str(proc.stdout.readline(), "utf-8").strip()
+            #TigerVNC server sessions:
+            #
+            #X DISPLAY #	PROCESS ID
+            #:1		7280 (stale)
+            #:12		29 (stale)
+            #:2		83704 (stale)
+            #:20		30
+            #:3		84266 (stale)
+            #:4		90576 (stale)
+            if "server sessions" in line:
+                pass
+            elif "X DISPLAY" in line:
+                skip = False
+            elif not skip and ":" in line:
+                if self.debug:
+                    msg = f"list_vnc: {line}"
+                    logging.debug(msg)
+                pattern = re.compile("""
+                        (:)
+                        (?P<display_number>[0-9]+)
+                        """, re.VERBOSE)
+                match = pattern.match(line)
+                if match is not None:
+                    display_number = match.group("display_number")
+                    if "stale" in line:
+                        stale.append(display_number)
+                    else:
+                        active.append(display_number)
+        return (active,stale)
+
+    def __path_exists__(self, path):
+        """
+        Returns True if path exists on subnode and False otherwise.
+        """
+        status = subprocess.call(['ssh', self.hostname, f"test -e {path}"])
+        if status == 0:
+            return True
+        return False
+
+    def __get_owner__(self, path):
+        """
+        Returns owner of file as a string and None if there was an error.
+        """
+        cmd=f"stat --format '%U' {path}"
+        proc = self.run_command(cmd)
+        if proc.poll() is None:
+            line = str(proc.stdout.readline(), "utf-8").strip()
+            if "stat" in line:
+                return None
+            return line
+        return None
+
+    def __remove_file__(self, filepath:str):
+        """
+        Removes file on subnode and returns True on success and False otherwise.
+        """
+        if self.__path_exists__(filepath) and self.__get_owner__(filepath) == os.getlogin():
+            if self.debug:
+                logging.debug(f"Deleting {filepath}...")
+            status = subprocess.call(['ssh', self.hostname, f"rm {filepath}"])
+            if status == 0:
+                return True
+            return False
+
+    def __listdir__(self, dirpath):
+        """
+        Returns a list of contents inside directory.
+        """
+        ret = list()
+        if self.__path_exists__(dirpath):
+            cmd = f"ls -al {dirpath} | tail -n+4"
+            proc = self.run_command(cmd)
+            while proc.poll() is None:
+                line = str(proc.stdout.readline(), "utf-8").strip()
+                pattern = re.compile("""
+                    ([^\s]+\s+){8}
+                    (?P<name>.*)
+                    """, re.VERBOSE)
+                match = re.match(pattern, line)
+                if match is not None:
+                    name = match.group("name")
+                    ret.append(name)
+        return ret
+
     def kill_vnc(self, display_number=None):
         """
         Kill specified VNC session with given display number or all VNC sessions.
         """
         if display_number is None:
-            target = ":*"
+            active,stale = self.list_vnc()
+            for entry in active:
+                if self.debug:
+                    logging.debug(f"kill_vnc: active entry: {entry}")
+                self.kill_vnc(entry)
+            for entry in stale:
+                if self.debug:
+                    logging.debug(f"kill_vnc: stale entry: {entry}")
+                self.kill_vnc(entry)
+            # Remove all remaining pid files
+            pid_list = glob.glob(os.path.expanduser("~/.vnc/*.pid"))
+            for pid_file in pid_list:
+                self.__remove_file__(pid_file)
+            # Remove all owned socket files on subnode
+            # Note: subnode maintains its own /tmp/ directory
+            x11_unix = "/tmp/.X11-unix"
+            ice_unix = "/tmp/.ICE-unix"
+            for entry in self.__listdir__(x11_unix):
+                self.__remove_file__(f"{x11_unix}/{entry}")
+            for entry in self.__listdir__(ice_unix):
+                self.__remove_file__(f"{x11_unix}/{entry}")
         else:
             assert display_number is not None
             target = f":{display_number}"
-        if self.debug:
-            print(f"Attempting to kill VNC session {target}")
-            logging.debug(f"Attempting to kill VNC session {target}")
-        cmd = f"{self.cmd_prefix} vncserver -kill {target}"
-        self.run_command(cmd)
+            if self.debug:
+                print(f"Attempting to kill VNC session {target}")
+                logging.debug(f"Attempting to kill VNC session {target}")
+            cmd = f"{self.sing_exec} vncserver -kill {target}"
+            proc = self.run_command(cmd)
+            killed = False
+            while proc.poll() is None:
+                line = str(proc.stdout.readline(), "utf-8").strip()
+                # Failed attempt:
+                #Can't kill '29': Operation not permitted
+                #Killing Xtigervnc process ID 29...
+                # On successful attempt:
+                #Killing Xtigervnc process ID 29... success!
+                if self.debug:
+                    logging.debug(f"kill_vnc: {line}")
+                if "success" in line:
+                    killed = True
+            if self.debug:
+                logging.debug(f"kill_vnc: killed? {killed}")
+            # Remove target's pid file if present
+            local_vnc_pid_file = os.path.expanduser(f"~/.vnc/{self.hostname}{target}.pid")
+            self.__remove_file__(local_vnc_pid_file)
+            # Remove associated /tmp/.X11-unix/<display_number> socket
+            socket_file = f"/tmp/.X11-unix/{display_number}"
+            self.__remove_file__(socket_file)
 
 class LoginNode(Node):
     """
