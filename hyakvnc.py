@@ -849,6 +849,30 @@ class LoginNode(Node):
             if item == "subnode" and props[item] is not None:
                 props[item].print_props()
 
+    def print_status(self, job_name:str, node_set=None, node_port_map=None):
+        """
+        Print details of each active VNC job in node_set. VNC port and display
+        number should be in node_port_map.
+        """
+        print(f"Active {job_name} jobs:")
+        if node_set is not None:
+            for node in node_set:
+                ln_port = None
+                if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
+                    ln_port = node_port_map.get(node.name).pop(node.vnc_port)
+                time_left = self.get_time_left(node.job_id, job_name)
+                vnc_active = node.check_vnc()
+                ssh_cmd = f"ssh -N -f -L {ln_port}:127.0.0.1:{ln_port} {os.getlogin()}@klone.hyak.uw.edu"
+                print(f"\tJob ID: {node.job_id}")
+                print(f"\t\tSubNode: {node.name}")
+                print(f"\t\tVNC active: {vnc_active}")
+                print(f"\t\tVNC display number: {node.vnc_display_number}")
+                print(f"\t\tVNC port: {node.vnc_port}")
+                print(f"\t\tMapped LoginNode port: {ln_port}")
+                print(f"\t\tTime left: {time_left}")
+                if ln_port is not None:
+                    print(f"\t\tRun command: {ssh_cmd}")
+
 def check_auth_keys():
     """
     Returns True if klone exists in ~/.ssh/authorized_keys and False otherwise
@@ -1051,25 +1075,7 @@ def main():
     node_port_map = hyak.get_port_forwards(node_set)
 
     if args.print_status:
-        # print VNC job details with same job name and quit
-        print(f"Active {args.job_name} jobs:")
-        if node_set is not None:
-            for node in node_set:
-                ln_port = None
-                if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
-                    ln_port = node_port_map.get(node.name).pop(node.vnc_port)
-                time_left = hyak.get_time_left(node.job_id, args.job_name)
-                vnc_active = node.check_vnc()
-                msg = f"ssh -N -f -L {ln_port}:127.0.0.1:{ln_port} {os.getlogin()}@klone.hyak.uw.edu"
-                print(f"\tJob ID: {node.job_id}")
-                print(f"\t\tSubNode: {node.name}")
-                print(f"\t\tVNC active: {vnc_active}")
-                print(f"\t\tVNC display number: {node.vnc_display_number}")
-                print(f"\t\tVNC port: {node.vnc_port}")
-                print(f"\t\tMapped LoginNode port: {ln_port}")
-                print(f"\t\tTime left: {time_left}")
-                if ln_port is not None:
-                    print(f"\t\tRun command: {msg}")
+        hyak.print_status(args.job_name, node_set, node_port_map)
         exit(0)
 
     if args.kill_job_id is not None:
