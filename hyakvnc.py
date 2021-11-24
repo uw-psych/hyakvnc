@@ -83,6 +83,8 @@ VERSION = 1.0
 #                - Time left
 #                - SSH port forward command
 #
+#   --restart <job_id> : restart VNC session (with same port) for specific job
+#
 #   --kill <job_id> : kill specific job
 #
 #   --kill-all : kill all VNC jobs with targeted Slurm job name
@@ -124,7 +126,7 @@ import re # for regex
 # - [ ] Write unit tests for functions
 # - [x] Remove psutil dependency
 # - [x] Handle SIGINT and SIGTSTP signals
-# - [ ] user argument to reset VNC session of active node
+# - [x] Add user argument to restart VNC session of active node
 # - [ ] Specify singularity container to run
 # - [x] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
 # - [ ] Use pyslurm to interface with Slurm: https://github.com/PySlurm/pyslurm
@@ -527,6 +529,23 @@ class SubNode(Node):
             # Remove associated /tmp/.X11-unix/<display_number> socket
             socket_file = f"/tmp/.X11-unix/{display_number}"
             self.__remove_file__(socket_file)
+
+    def restart_vnc(self, display_number=None):
+        """
+        Restart VNC sesion with same port.
+
+        Basic assumptions:
+          - Assumes LoginNode<->SubNode port forward is alive. Otherwise, we
+            would have to create a new portforward.
+        """
+        if display_number is None:
+            assert self.vnc_display_number is not None
+            display_number = self.vnc_display_number
+        # kill VNC job
+        self.kill_vnc(display_number)
+        # start VNC job with same port
+        status = self.start_vnc(display_number)
+        print(status)
 
 class LoginNode(Node):
     """
@@ -989,6 +1008,10 @@ def main():
                     dest='print_status',
                     action='store_true',
                     help='Print VNC jobs and other details, and then exit')
+    parser.add_argument('--restart',
+                    dest='restart_job_id',
+                    help='Restart VNC session for specified job id, and then exit',
+                    type=int)
     parser.add_argument('--kill',
                     dest='kill_job_id',
                     help='Kill specified VNC session, cancel its VNC job, and exit',
@@ -1122,7 +1145,11 @@ def main():
 
     # check for existing subnodes with same job name
     node_set = hyak.find_nodes(args.job_name)
-    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
+    if not args.print_status and \
+            args.restart_job_id is None and \
+            not args.kill_all and \
+            args.kill_job_id is None and \
+            not args.force:
         if node_set is not None:
             for node in node_set:
                 print(f"Error: Found active subnode {node.name} with job ID {node.job_id}")
@@ -1136,26 +1163,41 @@ def main():
         hyak.print_status(args.job_name, node_set, node_port_map)
         exit(0)
 
-    if args.kill_job_id is not None:
-        # kill single VNC job with same job name
-        msg = f"Attempting to kill {args.kill_job_id}"
+    if args.restart_job_id is not None or args.kill_job_id is not None:
+        kill = False
+        target = args.restart_job_id
+        if args.kill_job_id:
+            # kill single VNC job with same job name
+            msg = f"Attempting to kill {args.kill_job_id}"
+            kill = True
+            target = args.kill_job_id
+        else:
+            # restart single VNC job with same job name
+            msg = f"Attempting to restart {args.restart_job_id}"
         print(msg)
         if args.debug:
             logging.info(msg)
         if node_set is not None:
             # find target job (with same job name) and quit
             for node in node_set:
-                if re.match(str(node.job_id), str(args.kill_job_id)):
+                if re.match(str(node.job_id), str(target)):
                     if args.debug:
-                        logging.info("Found kill target")
+                        logging.info("Found target")
                         logging.info(f"\tVNC display number: {node.vnc_display_number}")
-                    # kill vnc session
-                    if node.vnc_display_number is not None:
-                        node.kill_vnc(node.vnc_display_number)
-                    # cancel job
-                    hyak.cancel_job(args.kill_job_id)
+                    if kill:
+                        # kill vnc session
+                        if node.vnc_display_number is not None:
+                            node.kill_vnc(node.vnc_display_number)
+                        # cancel job
+                        hyak.cancel_job(target)
+                    else:
+                        # restart vnc session
+                        node.restart_vnc()
+                        pass
                     exit(0)
-        msg = f"{args.kill_job_id} is not claimed or already killed"
+        msg = f"Failed to find node"
+        if kill:
+            msg = f"{args.kill_job_id} is not claimed or already killed"
         print(f"Error: {msg}")
         if args.debug:
             logging.error(msg)
