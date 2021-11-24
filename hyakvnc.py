@@ -279,19 +279,26 @@ class SubNode(Node):
                 return True
         return False
 
-    def start_vnc(self):
+    def start_vnc(self, display_number=None):
         """
         Starts VNC session
+
+        Args:
+          display_number: Attempt to acquire specified display number if set.
+                          If None, then let vncserver determine display number.
 
         Returns True if VNC session was started successfully and False otherwise
         """
         timer = 15
-        vnc_cmd = f"{self.sing_exec} vncserver -xstartup {XSTARTUP_FILEPATH} &"
+        target = ""
+        if display_number is not None:
+            target = f":{display_number}"
+        vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {XSTARTUP_FILEPATH} &"
         proc = self.run_command(vnc_cmd, timeout=timer)
 
         # get display number and port number
         while proc.poll() is None:
-            line = str(proc.stdout.readline(), 'utf-8')
+            line = str(proc.stdout.readline(), 'utf-8').strip()
 
             if line is not None:
                 if self.debug:
