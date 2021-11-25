@@ -1286,9 +1286,15 @@ def main():
     print(f"Creating port forward: Login node({hyak.u2h_port})<->Subnode({subnode.vnc_port})")
     h2s_fwd_proc = hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port)
 
-    # check if port forward succeeded
-    time.sleep(2)
-    if not hyak.check_port(hyak.u2h_port):
+    # wait until port forward succeeds
+    count = 0
+    port_fwd_success = False
+    while count < 20 and port_fwd_success:
+        port_fwd_success = not hyak.check_port(hyak.u2h_port)
+        count += 1
+        time.sleep(1)
+
+    if not port_fwd_success:
         msg = f"Successfully created port forward"
         print(msg)
         if args.debug:
