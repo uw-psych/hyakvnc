@@ -178,10 +178,14 @@ class Node:
                          isolated).
     """
 
-    def __init__(self, name, debug=False):
+    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
         self.debug = debug
         self.name = name
-        self.sing_exec_container = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {XFCE_CONTAINER}"
+        self.update_sing_exec_container(sing_container)
+
+    def update_sing_exec_container(self, sing_container:str):
+        self.sing_exec_container = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {sing_container}"
+        self.sing_container = sing_container
 
 class SubNode(Node):
     """
@@ -202,9 +206,9 @@ class SubNode(Node):
                instance.
     """
 
-    def __init__(self, name, job_id, debug=False):
+    def __init__(self, name, job_id, debug=False, sing_container=XFCE_CONTAINER):
         assert os.path.exists(AUTH_KEYS_FILEPATH)
-        super().__init__(name, debug)
+        super().__init__(name, debug, sing_container)
         self.hostname = f"{name}.hyak.local"
         self.job_id = job_id
         self.vnc_display_number = None
@@ -307,7 +311,7 @@ class SubNode(Node):
 
         Returns True on success and False on failure.
         """
-        cmd = f'{SINGULARITY_BIN} instance start -B {SINGULARITY_BINDPATH} {XFCE_CONTAINER} {self.job_id}'
+        cmd = f'{SINGULARITY_BIN} instance start -B {SINGULARITY_BINDPATH} {self.sing_container} {self.job_id}'
         proc = self.run_command(cmd)
         while proc.poll() is None:
             line = str(proc.stdout.readline(), "utf-8").strip()
@@ -553,11 +557,11 @@ class LoginNode(Node):
     capabilities.
     """
 
-    def __init__(self, name, debug=False):
+    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
         assert os.path.exists(XSTARTUP_FILEPATH)
         assert os.path.exists(SINGULARITY_BIN)
-        assert os.path.exists(XFCE_CONTAINER)
-        super().__init__(name, debug)
+        assert os.path.exists(sing_container)
+        super().__init__(name, debug, sing_container)
         self.subnode = None
 
     def find_nodes(self, job_name="vnc"):
@@ -780,7 +784,7 @@ class LoginNode(Node):
 
         assert subnode_job_id is not None
         assert subnode_name is not None
-        self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug)
+        self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug, sing_container=self.sing_container)
         self.subnode.res_time=res_time
         self.subnode.timeout=timeout
         self.subnode.cpus=cpus
