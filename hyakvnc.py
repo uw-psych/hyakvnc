@@ -655,14 +655,13 @@ class LoginNode(Node):
         Args:
           command:str : command and its arguments to run on subnode
 
-        Returns None
+        Returns command exit status
         """
         if self.debug:
             msg = f"Calling on {self.name}: {command}"
             print(msg)
             logging.debug(msg)
-        subprocess.call(command, shell=True)
-        return None
+        return subprocess.call(command, shell=True)
 
     def run_command(self, command):
         """
@@ -674,7 +673,7 @@ class LoginNode(Node):
           cmd_list = ["echo", "hi"]
 
         Args:
-          command : command and its arguments to run on subnode
+          command : command and its arguments to run on login node
 
         Returns subprocess with stderr->stdout and stdout->PIPE
         """
@@ -855,15 +854,40 @@ class LoginNode(Node):
           login_port:int : Login node port number
           subnode_port:int : Subnode port number
 
-        Returns ssh-portforward subprocess with stderr->stdout and stdout->PIPE
+        Returns True if port forward succeeds and False otherwise.
         """
         assert self.subnode is not None
         assert self.subnode.name is not None
         if self.debug:
             msg = f"Creating port forward: Login node({login_port})<->Subnode({subnode_port})"
             logging.debug(msg)
-        cmd = ["ssh", "-N", "-f", "-L", f"{login_port}:127.0.0.1:{subnode_port}", self.subnode.hostname]
-        self.run_command(cmd)
+        cmd = f"ssh -N -f -L {login_port}:127.0.0.1:{subnode_port} {self.subnode.hostname}"
+        status = self.call_command(cmd)
+
+        if status == 0:
+            # wait (at most ~20 seconds) until port forward succeeds
+            count = 0
+            port_used = not self.check_port(self.u2h_port)
+            while count < 20 and not port_used:
+                if self.debug:
+                    msg = f"create_port_forward: attempt #{count + 1}: port used? {port_used}"
+                    print(msg)
+                    logging.debug(msg)
+                port_used = not self.check_port(self.u2h_port)
+                count += 1
+                time.sleep(1)
+
+            if port_used:
+                msg = f"Successfully created port forward"
+                print(msg)
+                if self.debug:
+                    logging.info(msg)
+                return True
+        msg = f"Error: Failed to create port forward"
+        print(msg)
+        if self.debug:
+            logging.error(msg)
+        return False
 
     def get_port_forwards(self, nodes=None):
         """
@@ -1280,8 +1304,7 @@ def main():
 
     # start vnc session in singularity instance
     print("Starting VNC...")
-    ret = subnode.start_vnc()
-    if not ret:
+    if not subnode.start_vnc():
         hyak.cancel_job(subnode.job_id)
         exit(1)
 
@@ -1306,26 +1329,7 @@ def main():
 
     # create port forward between login and sub nodes
     print(f"Creating port forward: Login node({hyak.u2h_port})<->Subnode({subnode.vnc_port})")
-    h2s_fwd_proc = hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port)
-
-    # wait until port forward succeeds
-    count = 0
-    port_fwd_success = False
-    while count < 20 and port_fwd_success:
-        port_fwd_success = not hyak.check_port(hyak.u2h_port)
-        count += 1
-        time.sleep(1)
-
-    if not port_fwd_success:
-        msg = f"Successfully created port forward"
-        print(msg)
-        if args.debug:
-            logging.info(msg)
-    else:
-        msg = f"Error: Failed to create port forward"
-        print(msg)
-        if args.debug:
-            logging.error(msg)
+    if not hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port):
         hyak.cancel_job(subnode.job_id)
         exit(1)
 
