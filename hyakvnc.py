@@ -83,6 +83,9 @@ VERSION = 1.1
 #                - Time left
 #                - SSH port forward command
 #
+#   --container <sif> : [default: /gscratch/ece/xfce_singularity/xfce.sif] Use
+#                       specified XFCE+VNC container
+#
 #   --restart <job_id> : restart VNC session (with same port) for specific job
 #
 #   --kill <job_id> : kill specific job
@@ -290,20 +293,29 @@ class SubNode(Node):
                 return True
         return False
 
-    def check_singularity_instance(self):
+    def get_singularity_instance_image(self):
         """
-        Returns True if singularity instance with job_id as its name exists and
-        False otherwise.
+        Returns container filepath if singularity instance with job_id as its
+        name exists and None otherwise.
         """
         cmd = f"{SINGULARITY_BIN} instance list | grep {self.job_id}"
         proc = self.run_command(cmd)
+        #INSTANCE NAME    PID      IP    IMAGE
+        #1598784          41839          /gscratch/ece/xfce_singularity/xfce.sif
+        #1598956          62701          /gscratch/ece/xfce_singularity/centos7.sif
         while proc.poll() is None:
             line = str(proc.stdout.readline(), "utf-8").strip()
             if self.debug:
                 logging.debug(line)
             if self.job_id in line:
-                return True
-        return False
+                pattern = re.compile("""
+                    (([^\s]+)(\s+)){2}
+                    (?P<image>[^\s]+)
+                    """, re.VERBOSE)
+                match = re.match(pattern, line)
+                if match is not None:
+                    return match.group("image")
+        return None
 
     def start_singularity_instance(self):
         """
@@ -938,8 +950,9 @@ class LoginNode(Node):
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     ln_port = node_port_map.get(node.name).pop(node.vnc_port)
                 time_left = self.get_time_left(node.job_id, job_name)
+                container_file = node.get_singularity_instance_image()
+                node.update_sing_exec_container(container_file)
                 vnc_active = node.check_vnc()
-                container_instance_active = node.check_singularity_instance()
                 ssh_cmd = f"ssh -N -f -L {ln_port}:127.0.0.1:{ln_port} {os.getlogin()}@klone.hyak.uw.edu"
                 enter_container_cmd = f"ssh -t {node.name} {SINGULARITY_BIN} shell instance://{node.job_id}"
                 print(f"\tJob ID: {node.job_id}")
@@ -951,7 +964,7 @@ class LoginNode(Node):
                 print(f"\t\tTime left: {time_left}")
                 if ln_port is not None:
                     print(f"\t\tRun command: {ssh_cmd}")
-                if container_instance_active:
+                if container_file is not None:
                     print(f"\t\tEnter container: {enter_container_cmd}")
 
 def check_auth_keys():
@@ -1028,6 +1041,11 @@ def main():
                     dest='set_passwd',
                     action='store_true',
                     help='Prompts for new VNC password and exit')
+    parser.add_argument('--container',
+                    dest='sing_container',
+                    help='XFCE+VNC Singularity Container (.sif)',
+                    default=XFCE_CONTAINER,
+                    type=str)
     parser.add_argument('-d', '--debug',
                     dest='debug',
                     action='store_true',
@@ -1136,7 +1154,7 @@ def main():
         os.remove(ssh_known_hosts)
 
     # create login node object
-    hyak = LoginNode(hostname, args.debug)
+    hyak = LoginNode(hostname, args.debug, args.sing_container)
 
     # set VNC password at user's request or if missing
     if not hyak.check_vnc_password() or args.set_passwd:
