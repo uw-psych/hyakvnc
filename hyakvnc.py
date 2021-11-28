@@ -861,7 +861,7 @@ class LoginNode(Node):
         if self.debug:
             msg = f"Creating port forward: Login node({login_port})<->Subnode({subnode_port})"
             logging.debug(msg)
-        cmd = f"ssh -N -f -L {login_port}:127.0.0.1:{subnode_port} {self.subnode.hostname}"
+        cmd = f"ssh -N -f -L {login_port}:127.0.0.1:{subnode_port} {self.subnode.hostname} &> /dev/null"
         status = self.call_command(cmd)
 
         if status == 0:
