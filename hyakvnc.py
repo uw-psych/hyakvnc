@@ -142,6 +142,8 @@ import re # for regex
 # - [ ] Add singularity to $PATH if missing.
 # - [x] Remove stale VNC processes
 # - [ ] Add user argument to restart container instance
+# - [ ] Check if container meets dependencies
+# - [ ] Add argument to specify xstartup
 
 # Base VNC port cannot be changed due to vncserver not having a stable argument
 # interface:
