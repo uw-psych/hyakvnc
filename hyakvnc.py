@@ -133,7 +133,7 @@ import re # for regex
 # - [ ] Use pyslurm to interface with Slurm: https://github.com/PySlurm/pyslurm
 # - [x] Delete ~/.ssh/known_hosts before ssh'ing into subnode
 # - [ ] Replace netstat with ss
-# - [x] Create and use singularity instance. Then share instructions to enter instance.
+# - [ ] Create and use singularity instance. Then share instructions to enter instance.
 # - [x] Delete /tmp/.X11-unix/X<DISPLAY_NUMBER> if display number is not used on subnode
 #       Info: This can cause issues for vncserver (tigervnc)
 # - [x] Delete all owned socket files in /tmp/.ICE-unix/
@@ -171,23 +171,17 @@ if SINGULARITY_BINDPATH is None:
 class Node:
     """
     The Node class has the following initial data: bool: debug, string: name,
-    string: sing_exec_container.
+    string: sing_exec.
 
     debug: Print and log debug messages if True.
     name: Shortened hostname of node.
-    sing_exec_container: Add before command to execute inside a singularity
-                         container (but note that it cannot interact with
-                         processes inside a container instance since they are
-                         isolated).
+    sing_exec: Add before command to execute inside a singularity container
     """
 
     def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
         self.debug = debug
         self.name = name
-        self.update_sing_exec_container(sing_container)
-
-    def update_sing_exec_container(self, sing_container:str):
-        self.sing_exec_container = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {sing_container}"
+        self.sing_exec = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {sing_container}"
         self.sing_container = sing_container
 
 class SubNode(Node):
@@ -205,8 +199,7 @@ class SubNode(Node):
     job_id: Slurm Job ID that allocated the node.
     vnc_display_number: X display number used for VNC session.
     vnc_port: vnc_display_number + BASE_VNC_PORT.
-    sing_exec: Add before command to execute inside singularity container
-               instance.
+    sing_exec: Add before command to execute inside singularity container.
     """
 
     def __init__(self, name, job_id, debug=False, sing_container=XFCE_CONTAINER):
@@ -216,7 +209,6 @@ class SubNode(Node):
         self.job_id = job_id
         self.vnc_display_number = None
         self.vnc_port = None
-        self.sing_exec = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} instance://{self.job_id}"
 
     def print_props(self):
         """
@@ -282,7 +274,7 @@ class SubNode(Node):
         assert(self.name is not None)
         assert(self.job_id is not None)
         pid = self.get_vnc_pid(self.hostname, self.vnc_display_number)
-        cmd = f"{self.sing_exec} ps -U {os.getlogin()}"
+        cmd = f"ps -U {os.getlogin()}"
         proc = self.run_command(cmd)
         while proc.poll() is None:
             line = str(proc.stdout.readline(), "utf-8").strip()
@@ -290,64 +282,6 @@ class SubNode(Node):
                 if self.debug:
                     msg = f"Matched PID in line: {line}"
                     logging.debug(msg)
-                return True
-        return False
-
-    def get_singularity_instance_image(self):
-        """
-        Returns container filepath if singularity instance with job_id as its
-        name exists and None otherwise.
-        """
-        cmd = f"{SINGULARITY_BIN} instance list | grep {self.job_id}"
-        proc = self.run_command(cmd)
-        #INSTANCE NAME    PID      IP    IMAGE
-        #1598784          41839          /gscratch/ece/xfce_singularity/xfce.sif
-        #1598956          62701          /gscratch/ece/xfce_singularity/centos7.sif
-        while proc.poll() is None:
-            line = str(proc.stdout.readline(), "utf-8").strip()
-            if self.debug:
-                logging.debug(line)
-            if self.job_id in line:
-                pattern = re.compile("""
-                    (([^\s]+)(\s+)){2}
-                    (?P<image>[^\s]+)
-                    """, re.VERBOSE)
-                match = re.match(pattern, line)
-                if match is not None:
-                    return match.group("image")
-        return None
-
-    def start_singularity_instance(self):
-        """
-        Starts singularity instance with job_id as its name.
-
-        Returns True on success and False on failure.
-        """
-        cmd = f'{SINGULARITY_BIN} instance start -B {SINGULARITY_BINDPATH} {self.sing_container} {self.job_id}'
-        proc = self.run_command(cmd)
-        while proc.poll() is None:
-            line = str(proc.stdout.readline(), "utf-8").strip()
-            if self.debug:
-                logging.debug(line)
-            if "instance started successfully" in line:
-                return True
-        return False
-
-    def stop_singularity_instance(self):
-        """
-        Stops singularity instance with job_id as its name.
-
-        Returns True if instance was stopped and False otherwise.
-        """
-        cmd = f"{SINGULARITY_BIN} instance stop {self.job_id}"
-        proc = self.run_command(cmd)
-        while proc.poll() is None:
-            line = str(proc.stdout.readline(), "utf-8").strip()
-            if self.debug:
-                logging.debug(line)
-            if "no instance found" in line:
-                return False
-            if f"Stopping {self.job_id} instance of" in line:
                 return True
         return False
 
@@ -628,7 +562,7 @@ class LoginNode(Node):
         """
         Set VNC password
         """
-        cmd = f"{self.sing_exec_container} vncpasswd"
+        cmd = f"{self.sing_exec} vncpasswd"
         self.call_command(cmd)
 
     def call_command(self, command:str):
@@ -957,11 +891,8 @@ class LoginNode(Node):
                 if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
                     ln_port = node_port_map.get(node.name).pop(node.vnc_port)
                 time_left = self.get_time_left(node.job_id, job_name)
-                container_file = node.get_singularity_instance_image()
-                node.update_sing_exec_container(container_file)
                 vnc_active = node.check_vnc()
                 ssh_cmd = f"ssh -N -f -L {ln_port}:127.0.0.1:{ln_port} {os.getlogin()}@klone.hyak.uw.edu"
-                enter_container_cmd = f"ssh -t {node.name} {SINGULARITY_BIN} shell instance://{node.job_id}"
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubNode: {node.name}")
                 print(f"\t\tVNC active: {vnc_active}")
@@ -971,8 +902,6 @@ class LoginNode(Node):
                 print(f"\t\tTime left: {time_left}")
                 if ln_port is not None:
                     print(f"\t\tRun command: {ssh_cmd}")
-                if container_file is not None:
-                    print(f"\t\tEnter container: {enter_container_cmd}")
 
 def check_auth_keys():
     """
@@ -1249,16 +1178,7 @@ def main():
     signal.signal(signal.SIGINT, __irq_handler__)
     signal.signal(signal.SIGTSTP, __irq_handler__)
 
-    # Start singularity instance
-    if not subnode.start_singularity_instance():
-        msg = "Error: Unable to start singularity instance"
-        print(msg)
-        if args.debug:
-            logging.debug(msg)
-        hyak.cancel_job(subnode.job_id)
-        exit(1)
-
-    # start vnc session in singularity instance
+    # start vnc
     print("Starting VNC...")
     if not subnode.start_vnc():
         hyak.cancel_job(subnode.job_id)
@@ -1297,14 +1217,6 @@ def main():
     if args.debug:
         logging.debug(msg)
     print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
-    print("=====================")
-    # print command to enter container instance
-    print("Run the following to enter container instance:")
-    msg = f"ssh -t {subnode.name} {SINGULARITY_BIN} shell instance://{subnode.job_id}"
-    print(f"\t{msg}")
-    print("Info: Add -Y flag to ssh to enable X11-forwarding")
-    if args.debug:
-        logging.debug(msg)
     print("=====================")
 
     exit(0)
