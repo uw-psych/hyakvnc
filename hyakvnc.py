@@ -1233,8 +1233,6 @@ def main():
                         logging.info("Found target")
                         logging.info(f"\tVNC display number: {node.vnc_display_number}")
                     if kill:
-                        # stop singularity instance
-                        node.stop_singularity_instance()
                         # kill vnc session
                         if node.vnc_display_number is not None:
                             node.kill_vnc(node.vnc_display_number)
@@ -1261,8 +1259,6 @@ def main():
             logging.debug(msg)
         if node_set is not None:
             for node in node_set:
-                # stop singularity instance
-                node.stop_singularity_instance()
                 # kill all vnc sessions
                 node.kill_vnc()
                 # cancel job
