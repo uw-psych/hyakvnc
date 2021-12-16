@@ -154,10 +154,10 @@ LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
 SINGULARITY_BIN = "/opt/ohpc/pub/libs/singularity/3.7.1/bin/singularity"
 
 # Singularity container with XFCE + vncserver (tigervnc)
-XFCE_CONTAINER = "/gscratch/ece/xfce_singularity/xfce.sif"
+XFCE_CONTAINER = "/gscratch/ece/common_containers/ece_containers/centos7_singularity/centos7.sif"
 
 # Script used to start desktop environment (XFCE)
-XSTARTUP_FILEPATH = "/gscratch/ece/xfce_singularity/xstartup"
+XSTARTUP_FILEPATH = "/gscratch/ece/common_containers/ece_containers/xfce4_config/xstartup"
 
 # Checked to see if klone is authorized for intracluster access
 AUTH_KEYS_FILEPATH = os.path.expanduser("~/.ssh/authorized_keys")
