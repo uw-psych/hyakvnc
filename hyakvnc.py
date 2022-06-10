@@ -905,14 +905,13 @@ class LoginNode(Node):
 
 def check_auth_keys():
     """
-    Returns True if klone exists in ~/.ssh/authorized_keys and False otherwise
+    Returns True if a public key (~/.ssh/*.pub) exists in
+    ~/.ssh/authorized_keys and False otherwise.
     """
-    assert os.path.exists(AUTH_KEYS_FILEPATH)
-    f = open(AUTH_KEYS_FILEPATH, "r")
-    lines = f.readlines()
-    for line in lines:
-        line = line.strip()
-        if "klone" in line:
+    pubkeys = glob.glob(os.path.expanduser("~/.ssh/*.pub"))
+    for pubkey in pubkeys:
+        cmd = f"cat {pubkey} | grep -f {AUTH_KEYS_FILEPATH} &> /dev/null"
+        if subprocess.call(cmd, shell=True) == 0:
             return True
     return False
 
