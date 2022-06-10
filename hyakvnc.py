@@ -502,8 +502,14 @@ class SubNode(Node):
             if self.debug:
                 logging.debug(f"kill_vnc: killed? {killed}")
             # Remove target's pid file if present
-            local_vnc_pid_file = os.path.expanduser(f"~/.vnc/{self.hostname}{target}.pid")
-            self.__remove_file__(local_vnc_pid_file)
+            try:
+                os.remove(os.path.expanduser(f"~/.vnc/{self.hostname}{target}.pid"))
+            except:
+                pass
+            try:
+                os.remove(os.path.expanduser(f"~/.vnc/{self.name}{target}.pid"))
+            except:
+                pass
             # Remove associated /tmp/.X11-unix/<display_number> socket
             socket_file = f"/tmp/.X11-unix/{display_number}"
             self.__remove_file__(socket_file)
