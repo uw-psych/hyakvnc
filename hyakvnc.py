@@ -947,40 +947,48 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--partition',
                     dest='partition',
+                    metavar='<partition>',
                     help='Slurm partition',
                     default=PARTITION,
                     type=str)
     parser.add_argument('-A', '--account',
                     dest='account',
+                    metavar='<account>',
                     help='Slurm account',
                     default=ACCOUNT,
                     type=str)
     parser.add_argument('-J',
                     dest='job_name',
+                    metavar='<job_name>',
                     help='Slurm job name',
                     default=JOB_NAME,
                     type=str)
     parser.add_argument('--timeout',
                     dest='timeout',
-                    help='Allocation timeout length (in seconds)',
+                    metavar='<time_in_seconds>',
+                    help='Slurm node allocation timeout length (in seconds)',
                     default=TIMEOUT,
                     type=int)
     parser.add_argument('--port',
                     dest='u2h_port',
-                    help='User<->Hyak Port',
+                    metavar='<port_to_hyak>',
+                    help='User<->Hyak Port override',
                     type=int)
     parser.add_argument('-t', '--time',
                     dest='time',
+                    metavar='<time_in_hours>',
                     help='Subnode reservation time (in hours)',
                     default=RES_TIME,
                     type=int)
     parser.add_argument('-c', '--cpus',
                     dest='cpus',
+                    metavar='<num_cpus>',
                     help='Subnode cpu count',
                     default=CPUS,
                     type=int)
     parser.add_argument('--mem',
                     dest='mem',
+                    metavar='<NUM[KMGT]>',
                     help='Subnode memory',
                     default=MEM,
                     type=str)
@@ -990,6 +998,7 @@ def main():
                     help='Print VNC jobs and other details, and then exit')
     parser.add_argument('--kill',
                     dest='kill_job_id',
+                    metavar='<job_id>',
                     help='Kill specified VNC session, cancel its VNC job, and exit',
                     type=int)
     parser.add_argument('--kill-all',
@@ -1002,7 +1011,8 @@ def main():
                     help='Prompts for new VNC password and exit')
     parser.add_argument('--container',
                     dest='sing_container',
-                    help='XFCE+VNC Singularity Container (.sif)',
+                    metavar='<path_to_container.sif>',
+                    help='Path to VNC Singularity Container (.sif)',
                     default=XFCE_CONTAINER,
                     type=str)
     parser.add_argument('-d', '--debug',
