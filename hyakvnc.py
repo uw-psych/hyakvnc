@@ -243,6 +243,37 @@ class SubNode(Node):
             logging.info(msg)
         return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
+    def list_pids(self):
+        """
+        Returns list of PIDs of current job_id using
+        `scontrol listpids <job_id>`.
+        """
+        ret = list()
+        cmd = f"scontrol listpids {self.job_id}"
+        proc = self.run_command(cmd)
+        while proc.poll() is None:
+            line = str(proc.stdout.readline(), "utf-8").strip()
+            if self.debug:
+                msg = f"list_pids: {line}"
+                logging.debug(msg)
+            if "PID" in line:
+                pass
+            elif re.match("[0-9]+", line):
+                pid = int(line.split(' ', 1)[0])
+                ret.append(pid)
+        return ret
+
+    def check_pid(self, pid:int):
+        """
+        Returns True if given pid is active in job_id and False otherwise.
+        """
+        pids = self.list_pids()
+        if pid in pids:
+            if self.debug:
+                logging.debug(f"check_pid: {pid} is active on job ID {self.job_id}")
+            return True
+        return False
+
     def get_vnc_pid(self, hostname, display_number):
         """
         Returns pid from file <hostname>:<display_number>.pid or None if file
@@ -255,9 +286,9 @@ class SubNode(Node):
         assert(hostname is not None)
         if display_number is not None:
             filepath = os.path.expanduser(f"~/.vnc/{hostname}:{display_number}.pid")
-            if self.debug:
-                logging.info(f"Opening PID file {filepath}")
             if os.path.exists(filepath):
+                if self.debug:
+                    logging.debug(f"get_vnc_pid: {filepath} exists")
                 f = open(filepath, "r")
                 if f is not None:
                     pid = int(f.readline())
@@ -274,16 +305,13 @@ class SubNode(Node):
         assert(self.name is not None)
         assert(self.job_id is not None)
         pid = self.get_vnc_pid(self.hostname, self.vnc_display_number)
-        cmd = f"ps -U {os.getlogin()}"
-        proc = self.run_command(cmd)
-        while proc.poll() is None:
-            line = str(proc.stdout.readline(), "utf-8").strip()
-            if str(pid) in line:
-                if self.debug:
-                    msg = f"Matched PID in line: {line}"
-                    logging.debug(msg)
-                return True
-        return False
+        if pid is None:
+            pid = self.get_vnc_pid(self.name, self.vnc_display_number)
+            if pid is None:
+                return False
+        if self.debug:
+            logging.debug(f"check_vnc: Checking VNC PID {pid}")
+        return self.check_pid(pid)
 
     def start_vnc(self, display_number=None):
         """
