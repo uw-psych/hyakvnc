@@ -431,7 +431,7 @@ class SubNode(Node):
             status = subprocess.call(['ssh', self.hostname, f"rm {filepath}"])
             if status == 0:
                 return True
-            return False
+        return False
 
     def __listdir__(self, dirpath):
         """
