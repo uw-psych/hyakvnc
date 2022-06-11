@@ -399,38 +399,16 @@ class SubNode(Node):
                         active.append(display_number)
         return (active,stale)
 
-    def __path_exists__(self, path):
-        """
-        Returns True if path exists on subnode and False otherwise.
-        """
-        status = subprocess.call(['ssh', self.hostname, f"test -e {path}"])
-        if status == 0:
-            return True
-        return False
-
-    def __get_owner__(self, path):
-        """
-        Returns owner of file as a string and None if there was an error.
-        """
-        cmd=f"stat --format '%U' {path}"
-        proc = self.run_command(cmd)
-        if proc.poll() is None:
-            line = str(proc.stdout.readline(), "utf-8").strip()
-            if "stat" in line:
-                return None
-            return line
-        return None
-
     def __remove_file__(self, filepath:str):
         """
         Removes file on subnode and returns True on success and False otherwise.
         """
-        if self.__path_exists__(filepath) and self.__get_owner__(filepath) == os.getlogin():
-            if self.debug:
-                logging.debug(f"Deleting {filepath}...")
-            status = subprocess.call(['ssh', self.hostname, f"rm {filepath}"])
-            if status == 0:
-                return True
+        if self.debug:
+            logging.debug(f"Deleting {filepath}...")
+        cmd = f"test -O {filepath} && rm ${filepath}"
+        status = subprocess.call(['ssh', self.hostname, cmd])
+        if status == 0:
+            return True
         return False
 
     def __listdir__(self, dirpath):
@@ -438,19 +416,18 @@ class SubNode(Node):
         Returns a list of contents inside directory.
         """
         ret = list()
-        if self.__path_exists__(dirpath):
-            cmd = f"ls -al {dirpath} | tail -n+4"
-            proc = self.run_command(cmd)
-            while proc.poll() is None:
-                line = str(proc.stdout.readline(), "utf-8").strip()
-                pattern = re.compile("""
-                    ([^\s]+\s+){8}
-                    (?P<name>.*)
-                    """, re.VERBOSE)
-                match = re.match(pattern, line)
-                if match is not None:
-                    name = match.group("name")
-                    ret.append(name)
+        cmd = f"test -d {dirpath} && ls -al {dirpath} | tail -n+4"
+        proc = self.run_command(cmd)
+        while proc.poll() is None:
+            line = str(proc.stdout.readline(), "utf-8").strip()
+            pattern = re.compile("""
+                ([^\s]+\s+){8}
+                (?P<name>.*)
+                """, re.VERBOSE)
+            match = re.match(pattern, line)
+            if match is not None:
+                name = match.group("name")
+                ret.append(name)
         return ret
 
     def kill_vnc(self, display_number=None):
@@ -470,7 +447,10 @@ class SubNode(Node):
             # Remove all remaining pid files
             pid_list = glob.glob(os.path.expanduser("~/.vnc/*.pid"))
             for pid_file in pid_list:
-                self.__remove_file__(pid_file)
+                try:
+                    os.remove(pid_file)
+                except:
+                    pass
             # Remove all owned socket files on subnode
             # Note: subnode maintains its own /tmp/ directory
             x11_unix = "/tmp/.X11-unix"
