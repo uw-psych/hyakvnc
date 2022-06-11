@@ -1032,7 +1032,7 @@ def main():
     if not os.path.exists(AUTH_KEYS_FILEPATH) or not check_auth_keys():
         if args.debug:
             logging.warning("Warning: Not authorized for intracluster SSH access")
-        print("Warning: Please authorize for intracluster SSH access")
+        print("Add SSH public key to ~/.ssh/authorized_keys to continue")
         print(f"\tSee here for more information:")
         print(f"\t\thttps://hyak.uw.edu/docs/setup/ssh#intracluster-ssh-keys")
 
@@ -1060,7 +1060,7 @@ def main():
                 print(msg)
                 exit(1)
 
-        response = input("Allow intracluster access? [y/N] ")
+        response = input(f"Add {pub_key_filepath} to ~/.ssh/authorized_keys? [y/N] ")
         if re.match("[yY]", response):
             # add key to authorized_keys
             cmd = f"cat {pub_key_filepath} >> {AUTH_KEYS_FILEPATH}"
