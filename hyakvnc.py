@@ -399,13 +399,20 @@ class SubNode(Node):
                         active.append(display_number)
         return (active,stale)
 
-    def __remove_file__(self, filepath:str):
+    def __remove_files__(self, filepaths:list):
         """
-        Removes file on subnode and returns True on success and False otherwise.
+        Removes files on subnode and returns True on success and False otherwise.
+
+        Arg:
+          filepaths: list of file paths to remove. Each entry must be a file
+                     and not a directory.
         """
+        cmd = f"rm -f"
+        for path in filepaths:
+            cmd = f"{cmd} {path}"
+        cmd = f"{cmd} &> /dev/null"
         if self.debug:
-            logging.debug(f"Deleting {filepath}...")
-        cmd = f"test -O {filepath} && rm ${filepath}"
+            logging.debug(f"Calling ssh {self.hostname} {cmd}")
         status = subprocess.call(['ssh', self.hostname, cmd])
         if status == 0:
             return True
@@ -455,10 +462,12 @@ class SubNode(Node):
             # Note: subnode maintains its own /tmp/ directory
             x11_unix = "/tmp/.X11-unix"
             ice_unix = "/tmp/.ICE-unix"
+            file_targets = list()
             for entry in self.__listdir__(x11_unix):
-                self.__remove_file__(f"{x11_unix}/{entry}")
+                file_targets.append(f"{x11_unix}/{entry}")
             for entry in self.__listdir__(ice_unix):
-                self.__remove_file__(f"{x11_unix}/{entry}")
+                file_targets.append(f"{x11_unix}/{entry}")
+            self.__remove_files__(file_targets)
         else:
             assert display_number is not None
             target = f":{display_number}"
@@ -492,7 +501,7 @@ class SubNode(Node):
                 pass
             # Remove associated /tmp/.X11-unix/<display_number> socket
             socket_file = f"/tmp/.X11-unix/{display_number}"
-            self.__remove_file__(socket_file)
+            self.__remove_files__([socket_file])
 
 class LoginNode(Node):
     """
