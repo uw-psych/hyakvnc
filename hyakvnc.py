@@ -65,7 +65,7 @@ VERSION = 1.1
 #   -p <port>, --port <port> : [default: automatically found] override
 #                              User<->LoginNode port
 #
-#   -t <time>, --time <time> : [default: 3] VNC node reservation length in hours
+#   -t <time>, --time <time> : [default: 4] VNC node reservation length in hours
 #
 #   -c <ncpus>, --cpus <ncpus> : [default: 8] VNC node CPU count
 #
@@ -175,7 +175,7 @@ class Node:
 
     debug: Print and log debug messages if True.
     name: Shortened hostname of node.
-    sing_exec: Add before command to execute inside a singularity container
+    sing_exec: Added before command to execute inside a singularity container
     """
 
     def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
@@ -199,7 +199,7 @@ class SubNode(Node):
     job_id: Slurm Job ID that allocated the node.
     vnc_display_number: X display number used for VNC session.
     vnc_port: vnc_display_number + BASE_VNC_PORT.
-    sing_exec: Add before command to execute inside singularity container.
+    sing_exec: Added before command to execute inside singularity container.
     """
 
     def __init__(self, name, job_id, debug=False, sing_container=XFCE_CONTAINER):
