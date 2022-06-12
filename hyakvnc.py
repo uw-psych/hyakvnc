@@ -1087,7 +1087,7 @@ def main():
             if re.match("[yY]", response):
                 # create key
                 print(f"Creating new SSH key ({pr_key_filepath})")
-                cmd = f'ssh-keygen -C klone -t rsa -b 2048 -f {pr_key_filepath} -q -N ""'
+                cmd = f'ssh-keygen -C klone -t rsa -b 4096 -f {pr_key_filepath} -q -N ""'
                 if args.debug:
                     print(cmd)
                 subprocess.call(cmd, shell=True)
