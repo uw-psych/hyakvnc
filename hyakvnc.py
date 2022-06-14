@@ -328,6 +328,8 @@ class SubNode(Node):
         if display_number is not None:
             target = f":{display_number}"
         vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {XSTARTUP_FILEPATH} &"
+        if not self.debug:
+            print("Starting VNC server...", end="")
         proc = self.run_command(vnc_cmd, timeout=timer)
 
         # get display number and port number
@@ -352,10 +354,13 @@ class SubNode(Node):
                     if self.debug:
                         logging.debug(f"Obtained display number: {self.vnc_display_number}")
                         logging.debug(f"Obtained VNC port: {self.vnc_port}")
+                    else:
+                        print('\x1b[1;32m' + "Success" + '\x1b[0m')
                     return True
         if self.debug:
             logging.error("Failed to start vnc session (Timeout/?)")
-        print("start_vnc: Error: Timed out...")
+        else:
+            print('\x1b[1;31m' + "Timed out" + '\x1b[0m')
         return False
 
     def list_vnc(self):
@@ -1217,7 +1222,6 @@ def main():
     signal.signal(signal.SIGTSTP, __irq_handler__)
 
     # start vnc
-    print("Starting VNC...")
     if not subnode.start_vnc():
         hyak.cancel_job(subnode.job_id)
         exit(1)
