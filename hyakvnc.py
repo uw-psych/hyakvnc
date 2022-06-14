@@ -54,7 +54,7 @@ VERSION = 1.1
 #   -d, --debug : [default: disabled] show debug messages and enable debug
 #                 logging at ~/hyakvnc.log
 #
-#   -f, --force : [default: single VNC job] allow multiple VNC jobs/sessions
+#   --skip-check : [default: single VNC job] allow multiple VNC jobs/sessions
 #
 #   -p <part>, --partition <part> : [default: compute-hugemem] Slurm partition
 #
@@ -559,7 +559,7 @@ class LoginNode(Node):
                     proc.kill()
                     msg = f"Warning: Already allocating node with job {job_id}"
                     print(msg)
-                    print("Please try again later or run again with '--force' argument")
+                    print("Please try again later or run again with '--skip-check' argument")
                     if self.debug:
                         logging.info(f"name: {name}")
                         logging.info(f"job_id: {job_id}")
@@ -1028,8 +1028,8 @@ def main():
                     dest='debug',
                     action='store_true',
                     help='Enable debug logging')
-    parser.add_argument('-f', '--force',
-                    dest='force',
+    parser.add_argument('--skip-check',
+                    dest='skip_check',
                     action='store_true',
                     help='Skip node check and create a new VNC session')
     parser.add_argument('-v', '--version',
@@ -1145,7 +1145,7 @@ def main():
 
     # check for existing subnodes with same job name
     node_set = hyak.find_nodes(args.job_name)
-    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.force:
+    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.skip_check:
         if node_set is not None:
             for node in node_set:
                 print(f"Error: Found active subnode {node.name} with job ID {node.job_id}")
