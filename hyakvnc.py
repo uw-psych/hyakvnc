@@ -809,9 +809,11 @@ class LoginNode(Node):
         """
         assert self.subnode is not None
         assert self.subnode.name is not None
+        msg = f"Creating port forward: Login node({login_port})<->Subnode({subnode_port})"
         if self.debug:
-            msg = f"Creating port forward: Login node({login_port})<->Subnode({subnode_port})"
             logging.debug(msg)
+        else:
+            print(f"{msg}...", end="")
         cmd = f"ssh -N -f -L {login_port}:127.0.0.1:{subnode_port} {self.subnode.hostname} &> /dev/null"
         status = self.call_command(cmd)
 
@@ -822,22 +824,23 @@ class LoginNode(Node):
             while count < 20 and not port_used:
                 if self.debug:
                     msg = f"create_port_forward: attempt #{count + 1}: port used? {port_used}"
-                    print(msg)
                     logging.debug(msg)
                 port_used = not self.check_port(self.u2h_port)
                 count += 1
                 time.sleep(1)
 
             if port_used:
-                msg = f"Successfully created port forward"
-                print(msg)
                 if self.debug:
+                    msg = f"Successfully created port forward"
                     logging.info(msg)
+                else:
+                    print('\x1b[1;32m' + "Success" + '\x1b[0m')
                 return True
-        msg = f"Error: Failed to create port forward"
-        print(msg)
         if self.debug:
+            msg = f"Error: Failed to create port forward"
             logging.error(msg)
+        else:
+            print('\x1b[1;31m' + "Failed" + '\x1b[0m')
         return False
 
     def get_port_forwards(self, nodes=None):
@@ -1246,7 +1249,6 @@ def main():
         hyak.print_props()
 
     # create port forward between login and sub nodes
-    print(f"Creating port forward: Login node({hyak.u2h_port})<->Subnode({subnode.vnc_port})")
     if not hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port):
         hyak.cancel_job(subnode.job_id)
         exit(1)
