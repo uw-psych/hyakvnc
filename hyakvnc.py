@@ -84,7 +84,7 @@ VERSION = 1.2
 #                - SSH port forward command
 #
 #   --container <sif> : [default: /gscratch/ece/xfce_singularity/xfce.sif] Use
-#                       specified XFCE+VNC container
+#                       specified XFCE+VNC Apptainer/Singularity container
 #
 #   --kill <job_id> : kill specific job
 #
@@ -95,7 +95,7 @@ VERSION = 1.2
 
 # Dependencies:
 # - Python 3.6 or newer
-# - Singularity 3.7
+# - Apptainer 1.0 or newer
 # - Slurm
 # - netstat utility
 # - XFCE container:
@@ -142,6 +142,7 @@ import re # for regex
 # - [ ] Add user argument to restart container instance
 # - [ ] Check if container meets dependencies
 # - [ ] Add argument to specify xstartup
+# - [x] Migrate Singularity to Apptainer
 
 # Base VNC port cannot be changed due to vncserver not having a stable argument
 # interface:
@@ -150,8 +151,8 @@ BASE_VNC_PORT = 5900
 # List of Klone login nodes
 LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
 
-# Full path to Singularity binary
-SINGULARITY_BIN = "/opt/ohpc/pub/libs/singularity/3.7.1/bin/singularity"
+# Full path to Apptainer binary (formerly Singularity)
+APPTAINER_BIN = "/sw/apptainer/default/bin/apptainer"
 
 # Singularity container with XFCE + vncserver (tigervnc)
 XFCE_CONTAINER = "/gscratch/ece/common_containers/ece_containers/centos7_singularity/centos7.sif"
@@ -162,11 +163,13 @@ XSTARTUP_FILEPATH = "/gscratch/ece/common_containers/ece_containers/xfce4_config
 # Checked to see if klone is authorized for intracluster access
 AUTH_KEYS_FILEPATH = os.path.expanduser("~/.ssh/authorized_keys")
 
-# Singularity bindpaths can be overwritten if $SINGULARITY_BINDPATH is defined.
+# Apptainer bindpaths can be overwritten if $APPTAINER_BINDPATH is defined.
 # Bindpaths are used to mount storage paths to containerized environment.
-SINGULARITY_BINDPATH = os.getenv("SINGULARITY_BINDPATH")
-if SINGULARITY_BINDPATH is None:
-    SINGULARITY_BINDPATH = "/tmp:/tmp,$HOME,$PWD,/gscratch,/opt:/opt,/:/hyak_root"
+APPTAINER_BINDPATH = os.getenv("APPTAINER_BINDPATH")
+if APPTAINER_BINDPATH is None:
+    APPTAINER_BINDPATH = os.getenv("SINGULARITY_BINDPATH")
+if APPTAINER_BINDPATH is None:
+    APPTAINER_BINDPATH = "/tmp:/tmp,$HOME,$PWD,/gscratch,/opt:/opt,/:/hyak_root"
 
 class Node:
     """
@@ -181,7 +184,7 @@ class Node:
     def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
         self.debug = debug
         self.name = name
-        self.sing_exec = f"{SINGULARITY_BIN} exec -B {SINGULARITY_BINDPATH} {sing_container}"
+        self.sing_exec = f"{APPTAINER_BIN} exec -B {APPTAINER_BINDPATH} {sing_container}"
         self.sing_container = sing_container
 
 class SubNode(Node):
@@ -516,7 +519,7 @@ class LoginNode(Node):
 
     def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
         assert os.path.exists(XSTARTUP_FILEPATH)
-        assert os.path.exists(SINGULARITY_BIN)
+        assert os.path.exists(APPTAINER_BIN)
         assert os.path.exists(sing_container)
         super().__init__(name, debug, sing_container)
         self.subnode = None
@@ -1021,7 +1024,7 @@ def main():
     parser.add_argument('--container',
                     dest='sing_container',
                     metavar='<path_to_container.sif>',
-                    help='Path to VNC Singularity Container (.sif)',
+                    help='Path to VNC Apptainer/Singularity Container (.sif)',
                     default=XFCE_CONTAINER,
                     type=str)
     parser.add_argument('-d', '--debug',
