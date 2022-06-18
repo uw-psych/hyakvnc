@@ -118,7 +118,7 @@ import re # for regex
 # - [x] user arguments to override automatic port forward (with conflict checking)
 # - [x] reserve node with slurm
 # - [x] start vnc session (also check for active vnc sessions)
-# - [1/2] identify used ports : current implementation needs improvements
+# - [x] identify used ports
 # - [x] map node<->login port to unused user<->login port
 # - [x] port forward between login<->subnode
 # - [x] print instructions to user to setup user<->login port forwarding
@@ -127,19 +127,19 @@ import re # for regex
 # - [ ] Write unit tests for functions
 # - [x] Remove psutil dependency
 # - [x] Handle SIGINT and SIGTSTP signals
-# - [ ] user argument to reset VNC session of active node
-# - [ ] Specify singularity container to run
-# - [x] Document dependencies of external tools: slurm, singularity, xfce container, tigervnc
+# - [ ] user argument to reset specific VNC job
+# - [x] Specify singularity container to run
+# - [x] Document dependencies of external tools: slurm, apptainer/singularity, xfce container, tigervnc
 # - [ ] Use pyslurm to interface with Slurm: https://github.com/PySlurm/pyslurm
 # - [x] Delete ~/.ssh/known_hosts before ssh'ing into subnode
 # - [ ] Replace netstat with ss
-# - [ ] Create and use singularity instance. Then share instructions to enter instance.
+# - [ ] Create and use apptainer instances. Then share instructions to enter instance.
+# - [ ] Add user argument to restart container instance
 # - [x] Delete /tmp/.X11-unix/X<DISPLAY_NUMBER> if display number is not used on subnode
 #       Info: This can cause issues for vncserver (tigervnc)
 # - [x] Delete all owned socket files in /tmp/.ICE-unix/
 # - [ ] Add singularity to $PATH if missing.
 # - [x] Remove stale VNC processes
-# - [ ] Add user argument to restart container instance
 # - [ ] Check if container meets dependencies
 # - [ ] Add argument to specify xstartup
 # - [x] Migrate Singularity to Apptainer
