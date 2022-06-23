@@ -120,6 +120,7 @@ import re # for regex
 # - [x] start vnc session (also check for active vnc sessions)
 # - [x] identify used ports
 # - [x] map node<->login port to unused user<->login port
+# - [x] map port forward and job ID
 # - [x] port forward between login<->subnode
 # - [x] print instructions to user to setup user<->login port forwarding
 # - [x] print time left for node with --status argument
@@ -887,11 +888,34 @@ class LoginNode(Node):
                             if match is not None:
                                 ln_port = int(match.group("ln_port"))
                                 sn_port = int(match.group("sn_port"))
-                                node.vnc_port = sn_port
-                                node.vnc_display_number = sn_port - BASE_VNC_PORT
                                 port_map.update({sn_port:ln_port})
                     node_port_map.update({node.name:port_map})
         return node_port_map
+
+    def get_job_port_forward(self, job_id:int, node_name:str, node_port_map:dict):
+        """
+        Returns tuple containing LoginNodePort and SubNodePort for given job ID
+        and node_name. Returns None on failure.
+        """
+        if self.get_time_left(job_id) is not None:
+            port_map = node_port_map[node_name]
+            if port_map is not None:
+                subnode = SubNode(name=node_name, job_id=job_id, debug=self.debug, sing_container=self.sing_container)
+                for vnc_port in port_map.keys():
+                    display_number = vnc_port - BASE_VNC_PORT
+                    if self.debug:
+                        logging.debug(f"get_job_port_forward: Checking job {job_id} vnc_port {vnc_port}")
+                    # get PID from VNC pid file
+                    pid = subnode.get_vnc_pid(subnode.name, display_number)
+                    if pid is None:
+                        # try long hostname
+                        pid = subnode.get_vnc_pid(subnode.hostname, display_number)
+                    # if PID is active, then we have a hit for a specific job
+                    if pid is not None and subnode.check_pid(pid):
+                        if self.debug:
+                            logging.debug(f"get_job_port_forward: {job_id} has vnc_port {vnc_port} and login node port {port_map[vnc_port]}")
+                        return (vnc_port,port_map[vnc_port])
+        return None
 
     def get_time_left(self, job_id:int, job_name="vnc"):
         """
@@ -927,20 +951,25 @@ class LoginNode(Node):
         print(f"Active {job_name} jobs:")
         if node_set is not None:
             for node in node_set:
-                ln_port = None
-                if node_port_map and node_port_map[node.name] and node.vnc_port in node_port_map[node.name]:
-                    ln_port = node_port_map.get(node.name).pop(node.vnc_port)
+                mapped_port = None
+                if node_port_map and node_port_map[node.name]:
+                    port_forward = self.get_job_port_forward(node.job_id, node.name, node_port_map)
+                    if port_forward:
+                        vnc_port = port_forward[0]
+                        mapped_port = port_forward[1]
+                        node.vnc_display_number = vnc_port + BASE_VNC_PORT
+                        node_port_map.get(node.name).pop(vnc_port)
                 time_left = self.get_time_left(node.job_id, job_name)
-                vnc_active = node.check_vnc()
-                ssh_cmd = f"ssh -N -f -L {ln_port}:127.0.0.1:{ln_port} {os.getlogin()}@klone.hyak.uw.edu"
+                vnc_active = mapped_port is not None
+                ssh_cmd = f"ssh -N -f -L {mapped_port}:127.0.0.1:{mapped_port} {os.getlogin()}@klone.hyak.uw.edu"
                 print(f"\tJob ID: {node.job_id}")
                 print(f"\t\tSubNode: {node.name}")
-                print(f"\t\tVNC active: {vnc_active}")
-                print(f"\t\tVNC display number: {node.vnc_display_number}")
-                print(f"\t\tVNC port: {node.vnc_port}")
-                print(f"\t\tMapped LoginNode port: {ln_port}")
                 print(f"\t\tTime left: {time_left}")
-                if ln_port is not None:
+                print(f"\t\tVNC active: {vnc_active}")
+                if vnc_active:
+                    print(f"\t\tVNC display number: {vnc_port - BASE_VNC_PORT}")
+                    print(f"\t\tVNC port: {vnc_port}")
+                    print(f"\t\tMapped LoginNode port: {mapped_port}")
                     print(f"\t\tRun command: {ssh_cmd}")
 
 def check_auth_keys():
@@ -1176,8 +1205,9 @@ def main():
                         logging.info("Found kill target")
                         logging.info(f"\tVNC display number: {node.vnc_display_number}")
                     # kill vnc session
-                    if node.vnc_display_number is not None:
-                        node.kill_vnc(node.vnc_display_number)
+                    port_forward = hyak.get_job_port_forward(node.job_id, node.name, node_port_map)
+                    if port_forward:
+                        node.kill_vnc(port_forward[0] - BASE_VNC_PORT)
                     # cancel job
                     hyak.cancel_job(args.kill_job_id)
                     exit(0)
