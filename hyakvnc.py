@@ -62,6 +62,8 @@ VERSION = 1.2
 #
 #   -J <job_name> : [default: ece_vnc] Slurm job name
 #
+#   --timeout : [default: 120] Slurm node allocation and VNC startup timeout length (in seconds)
+#
 #   -p <port>, --port <port> : [default: automatically found] override
 #                              User<->LoginNode port
 #
@@ -317,24 +319,24 @@ class SubNode(Node):
             logging.debug(f"check_vnc: Checking VNC PID {pid}")
         return self.check_pid(pid)
 
-    def start_vnc(self, display_number=None):
+    def start_vnc(self, display_number=None, timeout=20):
         """
         Starts VNC session
 
         Args:
           display_number: Attempt to acquire specified display number if set.
                           If None, then let vncserver determine display number.
+          timeout: timeout length in seconds
 
         Returns True if VNC session was started successfully and False otherwise
         """
-        timer = 15
         target = ""
         if display_number is not None:
             target = f":{display_number}"
         vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {XSTARTUP_FILEPATH} &"
         if not self.debug:
             print("Starting VNC server...", end="")
-        proc = self.run_command(vnc_cmd, timeout=timer)
+        proc = self.run_command(vnc_cmd, timeout=timeout)
 
         # get display number and port number
         while proc.poll() is None:
@@ -1007,7 +1009,7 @@ def main():
     parser.add_argument('--timeout',
                     dest='timeout',
                     metavar='<time_in_seconds>',
-                    help='Slurm node allocation timeout length (in seconds)',
+                    help='Slurm node allocation and VNC startup timeout length (in seconds)',
                     default=TIMEOUT,
                     type=int)
     parser.add_argument('--port',
@@ -1258,7 +1260,7 @@ def main():
     signal.signal(signal.SIGTSTP, __irq_handler__)
 
     # start vnc
-    if not subnode.start_vnc():
+    if not subnode.start_vnc(timeout=args.timeout):
         hyak.cancel_job(subnode.job_id)
         exit(1)
 
