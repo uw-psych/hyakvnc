@@ -335,7 +335,7 @@ class SubNode(Node):
             target = f":{display_number}"
         vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {XSTARTUP_FILEPATH} &"
         if not self.debug:
-            print("Starting VNC server...", end="")
+            print("Starting VNC server...", end="", flush=True)
         proc = self.run_command(vnc_cmd, timeout=timeout)
 
         # get display number and port number
@@ -819,7 +819,7 @@ class LoginNode(Node):
         if self.debug:
             logging.debug(msg)
         else:
-            print(f"{msg}...", end="")
+            print(f"{msg}...", end="", flush=True)
         cmd = f"ssh -N -f -L {login_port}:127.0.0.1:{subnode_port} {self.subnode.hostname} &> /dev/null"
         status = self.call_command(cmd)
 
