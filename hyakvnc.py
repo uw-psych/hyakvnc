@@ -188,7 +188,8 @@ class Node:
         self.debug = debug
         self.name = name
         self.sing_exec = f"{APPTAINER_BIN} exec -B {APPTAINER_BINDPATH} {sing_container}"
-        self.sing_container = sing_container
+        self.sing_container = os.path.abspath(sing_container)
+        assert os.path.exists(self.sing_container)
 
 class SubNode(Node):
     """
@@ -523,7 +524,6 @@ class LoginNode(Node):
     def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
         assert os.path.exists(XSTARTUP_FILEPATH)
         assert os.path.exists(APPTAINER_BIN)
-        assert os.path.exists(sing_container)
         super().__init__(name, debug, sing_container)
         self.subnode = None
 
