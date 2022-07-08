@@ -875,15 +875,15 @@ class LoginNode(Node):
             for node in nodes:
                 if "(" not in node.name:
                     port_map = dict()
-                    cmd = f"ps aux | grep {os.getlogin()} | grep ssh | grep {node.name}"
+                    cmd = f"ps x | grep ssh | grep {node.name}"
                     proc = self.run_command(cmd)
                     while proc.poll() is None:
                         line = str(proc.stdout.readline(), 'utf-8').strip()
                         if cmd not in line:
                             # Match against pattern:
-                            #hansem7  2772462  0.0  0.0 286052   964 ?        Ss   00:53   0:00 ssh -N -f -L 5900:127.0.0.1:5901 n3000.hyak.local
+                            #1974577 ?        Ss     0:20 ssh -N -f -L 5902:127.0.0.1:5902 n3065.hyak.local
                             pattern = re.compile("""
-                                    ([^\s]+(\s)+){10}
+                                    ([^\s]+(\s)+){4}
                                     (ssh\s-N\s-f\s-L\s(?P<ln_port>[0-9]+):127.0.0.1:(?P<sn_port>[0-9]+))
                                     """, re.VERBOSE)
                             match = re.match(pattern, line)
@@ -1186,7 +1186,6 @@ def main():
             exit(1)
 
     # get port forwards (and display numbers)
-    # TODO: accurately map VNC display number and port to Slurm job
     node_port_map = hyak.get_port_forwards(node_set)
 
     if args.print_status:
@@ -1265,7 +1264,6 @@ def main():
         exit(1)
 
     # get unused User<->Login port
-    # CHANGE ME: NOT ROBUST
     if args.u2h_port is not None and hyak.check_port(args.u2h_port):
         hyak.u2h_port = args.u2h_port
     else:
