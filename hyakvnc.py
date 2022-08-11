@@ -826,12 +826,12 @@ class LoginNode(Node):
         if status == 0:
             # wait (at most ~20 seconds) until port forward succeeds
             count = 0
-            port_used = not self.check_port(self.u2h_port)
+            port_used = not self.check_port(login_port)
             while count < 20 and not port_used:
                 if self.debug:
                     msg = f"create_port_forward: attempt #{count + 1}: port used? {port_used}"
                     logging.debug(msg)
-                port_used = not self.check_port(self.u2h_port)
+                port_used = not self.check_port(login_port)
                 count += 1
                 time.sleep(1)
 
