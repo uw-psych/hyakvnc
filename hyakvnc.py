@@ -88,6 +88,8 @@ VERSION = 1.2
 #   --container <sif> : [default: /gscratch/ece/xfce_singularity/xfce.sif] Use
 #                       specified XFCE+VNC Apptainer/Singularity container
 #
+#   --repair : Repair all missing/broken LoginNode<->SubNode port forwards, and then exit
+#
 #   --kill <job_id> : kill specific job
 #
 #   --kill-all : kill all VNC jobs with targeted Slurm job name
@@ -146,6 +148,7 @@ import re # for regex
 # - [ ] Check if container meets dependencies
 # - [ ] Add argument to specify xstartup
 # - [x] Migrate Singularity to Apptainer
+# - [x] Repair LoginNode<->SubNode port forwards when login node goes down.
 
 # Base VNC port cannot be changed due to vncserver not having a stable argument
 # interface:
@@ -974,6 +977,44 @@ class LoginNode(Node):
                     print(f"\t\tMapped LoginNode port: {mapped_port}")
                     print(f"\t\tRun command: {ssh_cmd}")
 
+    def repair_ln_sn_port_forwards(self, node_set=None, node_port_map=None):
+        """
+        Re-creates port forwards missing from vnc jobs.
+        Useful when LoginNode restarts but VNC jobs remain alive.
+        """
+        if node_set is not None:
+            for node in node_set:
+                if node_port_map and node_port_map[node.name]:
+                    print(f"{node.name} with job ID {node.job_id} already has valid port forward")
+                else:
+                    subnode = SubNode(name=node.name, job_id=node.job_id, debug=self.debug, sing_container=self.sing_container)
+                    subnode_pids = subnode.list_pids()
+                    # search for vnc process
+                    proc = subnode.run_command("ps x | grep vnc")
+                    if proc.poll() is None:
+                        line = str(proc.stdout.readline(), 'utf-8').strip()
+                        pid = int(line.split(' ', 1)[0])
+                        # match found
+                        if pid in subnode_pids:
+                            if self.debug:
+                                logging.debug(f"repair_ln_sn_port_forwards: VNC PID {pid} found for job ID {node.job_id}")
+                            pattern = re.compile("""
+                                    (vnc\s+:)
+                                    (?P<display_number>\d+)
+                                    """, re.VERBOSE)
+                            match = re.search(pattern, line)
+                            assert match is not None
+                            vnc_port = BASE_VNC_PORT + int(match.group("display_number"))
+                            u2h_port = self.get_port()
+                            if self.debug:
+                                logging.debug(f"repair_ln_sn_port_forwards: LoginNode({u2h_port})<->JobID({vnc_port})")
+                            if u2h_port is None:
+                                print(f"Error: cannot find available/unused port")
+                                continue
+                            else:
+                                self.subnode = subnode
+                                self.create_port_forward(u2h_port, vnc_port)
+
 def check_auth_keys():
     """
     Returns True if a public key (~/.ssh/*.pub) exists in
@@ -1058,6 +1099,10 @@ def main():
                     help='Path to VNC Apptainer/Singularity Container (.sif)',
                     default=XFCE_CONTAINER,
                     type=str)
+    parser.add_argument('--repair',
+                    dest='repair',
+                    action='store_true',
+                    help='Repair all missing/broken LoginNode<->SubNode port forwards, and then exit')
     parser.add_argument('-d', '--debug',
                     dest='debug',
                     action='store_true',
@@ -1179,7 +1224,7 @@ def main():
 
     # check for existing subnodes with same job name
     node_set = hyak.find_nodes(args.job_name)
-    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.skip_check:
+    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.skip_check and not args.repair:
         if node_set is not None:
             for node in node_set:
                 print(f"Error: Found active subnode {node.name} with job ID {node.job_id}")
@@ -1187,6 +1232,11 @@ def main():
 
     # get port forwards (and display numbers)
     node_port_map = hyak.get_port_forwards(node_set)
+
+    if args.repair:
+        # repair broken port forwards
+        hyak.repair_ln_sn_port_forwards(node_set, node_port_map)
+        exit(0)
 
     if args.print_status:
         hyak.print_status(args.job_name, node_set, node_port_map)
