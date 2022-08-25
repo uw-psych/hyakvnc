@@ -991,7 +991,7 @@ class LoginNode(Node):
                     subnode_pids = subnode.list_pids()
                     # search for vnc process
                     proc = subnode.run_command("ps x | grep vnc")
-                    if proc.poll() is None:
+                    while proc.poll() is None:
                         line = str(proc.stdout.readline(), 'utf-8').strip()
                         pid = int(line.split(' ', 1)[0])
                         # match found
