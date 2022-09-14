@@ -154,8 +154,8 @@ import re # for regex
 # interface:
 BASE_VNC_PORT = 5900
 
-# List of Klone login nodes
-LOGIN_NODE_LIST = ["klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
+# List of Klone login node hostnames
+LOGIN_NODE_LIST = ["klone-login01", "klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
 
 # Full path to Apptainer binary (formerly Singularity)
 APPTAINER_BIN = "/sw/apptainer/default/bin/apptainer"
