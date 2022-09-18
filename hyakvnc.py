@@ -290,8 +290,12 @@ class SubNode(Node):
             display_number = self.vnc_display_number
         assert(hostname is not None)
         if display_number is not None:
-            filepath = os.path.expanduser(f"~/.vnc/{hostname}:{display_number}.pid")
-            with open(filepath, "r") as f:
+            filepaths = glob.glob(os.path.expanduser(f"~/.vnc/{hostname}*:{display_number}.pid"))
+            for path in filepaths:
+                try:
+                    f = open(path, "r")
+                except:
+                    pass
                 return int(f.readline())
         return None
 
