@@ -277,12 +277,7 @@ class SubNode(Node):
         """
         Returns True if given pid is active in job_id and False otherwise.
         """
-        pids = self.list_pids()
-        if pid in pids:
-            if self.debug:
-                logging.debug(f"check_pid: {pid} is active on job ID {self.job_id}")
-            return True
-        return False
+        return pid in self.list_pids()
 
     def get_vnc_pid(self, hostname, display_number):
         """
@@ -296,16 +291,8 @@ class SubNode(Node):
         assert(hostname is not None)
         if display_number is not None:
             filepath = os.path.expanduser(f"~/.vnc/{hostname}:{display_number}.pid")
-            if os.path.exists(filepath):
-                if self.debug:
-                    logging.debug(f"get_vnc_pid: {filepath} exists")
-                f = open(filepath, "r")
-                if f is not None:
-                    pid = int(f.readline())
-                    if self.debug:
-                        logging.info(f"{filepath}: {pid}")
-                    f.close()
-                    return pid
+            with open(filepath, "r") as f:
+                return int(f.readline())
         return None
 
     def check_vnc(self):
@@ -380,38 +367,26 @@ class SubNode(Node):
         active = list()
         stale = list()
         cmd = f"{self.sing_exec} vncserver -list"
+        #TigerVNC server sessions:
+        #
+        #X DISPLAY #	PROCESS ID
+        #:1		7280 (stale)
+        #:12		29 (stale)
+        #:2		83704 (stale)
+        #:20		30
+        #:3		84266 (stale)
+        #:4		90576 (stale)
+        pattern = re.compile(r":(?P<display_number>\d+)\s+\d+(?P<stale>\s\(stale\))?")
         proc = self.run_command(cmd)
-        skip = True
         while proc.poll() is None:
             line = str(proc.stdout.readline(), "utf-8").strip()
-            #TigerVNC server sessions:
-            #
-            #X DISPLAY #	PROCESS ID
-            #:1		7280 (stale)
-            #:12		29 (stale)
-            #:2		83704 (stale)
-            #:20		30
-            #:3		84266 (stale)
-            #:4		90576 (stale)
-            if "server sessions" in line:
-                pass
-            elif "X DISPLAY" in line:
-                skip = False
-            elif not skip and ":" in line:
-                if self.debug:
-                    msg = f"list_vnc: {line}"
-                    logging.debug(msg)
-                pattern = re.compile("""
-                        (:)
-                        (?P<display_number>[0-9]+)
-                        """, re.VERBOSE)
-                match = pattern.match(line)
-                if match is not None:
-                    display_number = match.group("display_number")
-                    if "stale" in line:
-                        stale.append(display_number)
-                    else:
-                        active.append(display_number)
+            match = re.search(pattern, line)
+            if match is not None:
+                display_number = match.group("display_number")
+                if match.group("stale") is not None:
+                    stale.append(display_number)
+                else:
+                    active.append(display_number)
         return (active,stale)
 
     def __remove_files__(self, filepaths:list):
@@ -428,10 +403,7 @@ class SubNode(Node):
         cmd = f"{cmd} &> /dev/null"
         if self.debug:
             logging.debug(f"Calling ssh {self.hostname} {cmd}")
-        status = subprocess.call(['ssh', self.hostname, cmd])
-        if status == 0:
-            return True
-        return False
+        return subprocess.call(['ssh', self.hostname, cmd]) == 0
 
     def __listdir__(self, dirpath):
         """
@@ -439,13 +411,13 @@ class SubNode(Node):
         """
         ret = list()
         cmd = f"test -d {dirpath} && ls -al {dirpath} | tail -n+4"
+        pattern = re.compile("""
+            ([^\s]+\s+){8}
+            (?P<name>.*)
+            """, re.VERBOSE)
         proc = self.run_command(cmd)
         while proc.poll() is None:
             line = str(proc.stdout.readline(), "utf-8").strip()
-            pattern = re.compile("""
-                ([^\s]+\s+){8}
-                (?P<name>.*)
-                """, re.VERBOSE)
             match = re.match(pattern, line)
             if match is not None:
                 name = match.group("name")
@@ -756,13 +728,6 @@ class LoginNode(Node):
         assert subnode_job_id is not None
         assert subnode_name is not None
         self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug, sing_container=self.sing_container)
-        self.subnode.res_time=res_time
-        self.subnode.timeout=timeout
-        self.subnode.cpus=cpus
-        self.subnode.mem=mem
-        self.subnode.partition=partition
-        self.subnode.account=account
-        self.subnode.job_name=job_name
         return self.subnode
 
     def cancel_job(self, job_id:int):
