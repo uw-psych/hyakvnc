@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
+# Copyright (c) 2023 Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
 
 # default node allocation settings
 RES_TIME = 4 # hours
@@ -11,9 +12,6 @@ ACCOUNT = "ece"
 JOB_NAME = "ece_vnc"
 
 VERSION = 1.2
-
-# Created by Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
-# Maintained by ECE TAs
 
 # Quick start guide
 #
