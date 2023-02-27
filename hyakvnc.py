@@ -144,7 +144,7 @@ import re # for regex
 # - [ ] Add singularity to $PATH if missing.
 # - [x] Remove stale VNC processes
 # - [ ] Check if container meets dependencies
-# - [ ] Add argument to specify xstartup
+# - [x] Add argument to specify xstartup
 # - [x] Migrate Singularity to Apptainer
 # - [x] Repair LoginNode<->SubNode port forwards when login node goes down.
 
@@ -185,12 +185,14 @@ class Node:
     sing_exec: Added before command to execute inside a singularity container
     """
 
-    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
+    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER, xstartup=XSTARTUP_FILEPATH):
         self.debug = debug
         self.name = name
         self.sing_exec = f"{APPTAINER_BIN} exec -B {APPTAINER_BINDPATH} {sing_container}"
         self.sing_container = os.path.abspath(sing_container)
+        self.xstartup = os.path.abspath(xstartup)
         assert os.path.exists(self.sing_container)
+        assert os.path.exists(self.xstartup)
 
 class SubNode(Node):
     """
@@ -210,9 +212,9 @@ class SubNode(Node):
     sing_exec: Added before command to execute inside singularity container.
     """
 
-    def __init__(self, name, job_id, debug=False, sing_container=XFCE_CONTAINER):
+    def __init__(self, name, job_id, debug=False, sing_container=XFCE_CONTAINER, xstartup=XSTARTUP_FILEPATH):
         assert os.path.exists(AUTH_KEYS_FILEPATH)
-        super().__init__(name, debug, sing_container)
+        super().__init__(name, debug, sing_container, xstartup)
         self.hostname = f"{name}.hyak.local"
         self.job_id = job_id
         self.vnc_display_number = None
@@ -326,7 +328,7 @@ class SubNode(Node):
         target = ""
         if display_number is not None:
             target = f":{display_number}"
-        vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {XSTARTUP_FILEPATH} &"
+        vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {self.xstartup} &"
         if not self.debug:
             print("Starting VNC server...", end="", flush=True)
         proc = self.run_command(vnc_cmd, timeout=timeout)
@@ -498,10 +500,9 @@ class LoginNode(Node):
     capabilities.
     """
 
-    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER):
-        assert os.path.exists(XSTARTUP_FILEPATH)
+    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER, xstartup=XSTARTUP_FILEPATH):
         assert os.path.exists(APPTAINER_BIN)
-        super().__init__(name, debug, sing_container)
+        super().__init__(name, debug, sing_container, xstartup)
         self.subnode = None
 
     def find_nodes(self, job_name="vnc"):
@@ -1066,6 +1067,12 @@ def main():
                     help='Path to VNC Apptainer/Singularity Container (.sif)',
                     default=XFCE_CONTAINER,
                     type=str)
+    parser.add_argument('--xstartup',
+                    dest='xstartup',
+                    metavar='<path_to_xstartup>',
+                    help='Path to xstartup script',
+                    default=XSTARTUP_FILEPATH,
+                    type=str)
     parser.add_argument('--repair',
                     dest='repair',
                     action='store_true',
@@ -1178,7 +1185,7 @@ def main():
         os.remove(ssh_known_hosts)
 
     # create login node object
-    hyak = LoginNode(hostname, args.debug, args.sing_container)
+    hyak = LoginNode(hostname, args.debug, args.sing_container, args.xstartup)
 
     # set VNC password at user's request or if missing
     if not hyak.check_vnc_password() or args.set_passwd:
