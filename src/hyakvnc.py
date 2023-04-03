@@ -2,22 +2,20 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2023 Hansem Ro <hansem7@uw.edu> <hansemro@outlook.com>
 
-# default node allocation settings
-RES_TIME = 4 # hours
-TIMEOUT = 120 # seconds
-CPUS = 8
-MEM = "16G"
-PARTITION = "compute-hugemem"
-ACCOUNT = "ece"
-JOB_NAME = "ece_vnc"
-
-VERSION = 1.2
+VERSION = 2.0
 
 # Quick start guide
 #
-# 1. To start VNC session for 5 hours on node with 16 cores and 32GB of memory,
+# 1. Build and install hyakvnc package
+#      $ python3 -m pip install --upgrade --user pip
+#      $ cd hyakvnc
+#      $ python3 -m pip install --user .
+#
+# 2. To start VNC session for 5 hours on node with 16 cores and 32GB of memory,
 #    run the following
-#      $ ./hyakvnc.py -t 5 -c 16 --mem 32G
+#      $ hyakvnc create -t 5 -c 16 --mem 32G \
+#               --container /path/to/container.sif \
+#               --xstartup /path/to/xstartup
 #      ...
 #      =====================
 #      Run the following in a new terminal window:
@@ -28,23 +26,23 @@ VERSION = 1.2
 #    This should print a command to setup port forwarding. Copy it for the
 #    following step.
 #
-# 2. Set up port forward between your computer and HYAK login node.
+# 3. Set up port forward between your computer and HYAK login node.
 #    On your machine, in a new terminal window, run the the copied command.
 #
 #    In this example, run
 #      $ ssh -N -f -L 5901:127.0.0.1:5901 hansem7@klone.hyak.uw.edu
 #
-# 3. Connect to VNC session at instructed address (in example: localhost:5901)
+# 4. Connect to VNC session at instructed address (in example: localhost:5901)
 #
-# 4. To close VNC session, run the following
-#      $ ./hyakvnc.py --kill-all
+# 5. To close VNC session, run the following
+#      $ hyakvnc kill-all
 #
-# 5. Kill port forward process from step 2
+# 6. Kill port forward process from step 3
 
 
-# Usage: ./hyakvnc.py [-h/--help] [OPTIONS]
+# Usage: hyakvnc [-h/--help] [OPTIONS] [COMMAND] [COMMAND_ARGS]
 #
-# Options:
+# Optional arguments:
 #   -h, --help : print help message and exit
 #
 #   -v, --version : print program version and exit
@@ -52,47 +50,60 @@ VERSION = 1.2
 #   -d, --debug : [default: disabled] show debug messages and enable debug
 #                 logging at ~/hyakvnc.log
 #
-#   --skip-check : [default: single VNC job] allow multiple VNC jobs/sessions
+#   -J <job_name> : [default: hyakvnc] Override Slurm job name
 #
-#   -p <part>, --partition <part> : [default: compute-hugemem] Slurm partition
+# Commands:
 #
-#   -A <account>, --account <account> : [default: ece] Slurm account
+#   create : Create VNC session
 #
-#   -J <job_name> : [default: ece_vnc] Slurm job name
+#     Optional arguments for create:
 #
-#   --timeout : [default: 120] Slurm node allocation and VNC startup timeout length (in seconds)
+#       --timeout : [default: 120] Slurm node allocation and VNC startup timeout
+#                   length (in seconds)
 #
-#   -p <port>, --port <port> : [default: automatically found] override
-#                              User<->LoginNode port
+#       -p <port>, --port <port> : [default: automatically found] override
+#                                  User<->LoginNode port
 #
-#   -t <time>, --time <time> : [default: 4] VNC node reservation length in hours
+#     Required arguments for create:
 #
-#   -c <ncpus>, --cpus <ncpus> : [default: 8] VNC node CPU count
+#       -p <part>, --partition <part> : Slurm partition
 #
-#   --mem <size[units]> : [default: 16G] VNC node memory
-#                         Valid units: K, M, G, T
+#       -A <account>, --account <account> : Slurm account
 #
-#   --status : print details of active VNC jobs and exit. Details include the
-#              following for each active job:
-#                - Job ID
-#                - Subnode name
-#                - VNC session status
-#                - VNC display number
-#                - Subnode/VNC port
-#                - User/LoginNode port
-#                - Time left
-#                - SSH port forward command
+#       -t <time>, --time <time> : VNC node reservation length in hours
 #
-#   --container <sif> : [default: /gscratch/ece/xfce_singularity/xfce.sif] Use
-#                       specified XFCE+VNC Apptainer/Singularity container
+#       -c <ncpus>, --cpus <ncpus> : VNC node CPU count
 #
-#   --repair : Repair all missing/broken LoginNode<->SubNode port forwards, and then exit
+#       --mem <size[units]> : [default: 16G] VNC node memory amount
+#                             Valid units: K, M, G, T
 #
-#   --kill <job_id> : kill specific job
+#       --container <sif> : Use specified XFCE+VNC Apptainer container
 #
-#   --kill-all : kill all VNC jobs with targeted Slurm job name
+#       --xstartup <xstartup_path> : Use specified xstartup script
 #
-#   --set-passwd : prompt to set VNC password and exit
+#   status : print details of active VNC jobs with given job name and exit.
+#            Details include the following for each active job:
+#              - Job ID
+#              - Subnode name
+#              - VNC session status
+#              - VNC display number
+#              - Subnode/VNC port
+#              - User/LoginNode port
+#              - Time left
+#              - SSH port forward command
+#
+#   kill <job_id> : Kill specified job
+#
+#   kill-all : Cancel all VNC jobs with given job name and exit
+#
+#   set-passwd : Prompts for new VNC password and exit
+#
+#     Required argument for set-passwd:
+#
+#       --container <sif> : Use specified XFCE+VNC Apptainer container
+#
+#   repair : Repair all missing/broken LoginNode<->SubNode port
+#            forwards, and then exit
 #
 
 # Dependencies:
@@ -158,12 +169,6 @@ LOGIN_NODE_LIST = ["klone-login01", "klone1.hyak.uw.edu", "klone2.hyak.uw.edu"]
 # Full path to Apptainer binary (formerly Singularity)
 APPTAINER_BIN = "/sw/apptainer/default/bin/apptainer"
 
-# Singularity container with XFCE + vncserver (tigervnc)
-XFCE_CONTAINER = "/gscratch/ece/common_containers/ece_containers/centos7_singularity/centos7.sif"
-
-# Script used to start desktop environment (XFCE)
-XSTARTUP_FILEPATH = "/gscratch/ece/common_containers/ece_containers/xfce4_config/xstartup"
-
 # Checked to see if klone is authorized for intracluster access
 AUTH_KEYS_FILEPATH = os.path.expanduser("~/.ssh/authorized_keys")
 
@@ -185,14 +190,12 @@ class Node:
     sing_exec: Added before command to execute inside a singularity container
     """
 
-    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER, xstartup=XSTARTUP_FILEPATH):
+    def __init__(self, name, sing_container, xstartup, debug=False):
         self.debug = debug
         self.name = name
         self.sing_exec = f"{APPTAINER_BIN} exec -B {APPTAINER_BINDPATH} {sing_container}"
         self.sing_container = os.path.abspath(sing_container)
         self.xstartup = os.path.abspath(xstartup)
-        assert os.path.exists(self.sing_container)
-        assert os.path.exists(self.xstartup)
 
 class SubNode(Node):
     """
@@ -212,9 +215,8 @@ class SubNode(Node):
     sing_exec: Added before command to execute inside singularity container.
     """
 
-    def __init__(self, name, job_id, debug=False, sing_container=XFCE_CONTAINER, xstartup=XSTARTUP_FILEPATH):
-        assert os.path.exists(AUTH_KEYS_FILEPATH)
-        super().__init__(name, debug, sing_container, xstartup)
+    def __init__(self, name, job_id, sing_container, xstartup, debug=False):
+        super().__init__(name, sing_container, xstartup, debug)
         self.hostname = f"{name}.hyak.local"
         self.job_id = job_id
         self.vnc_display_number = None
@@ -500,9 +502,9 @@ class LoginNode(Node):
     capabilities.
     """
 
-    def __init__(self, name, debug=False, sing_container=XFCE_CONTAINER, xstartup=XSTARTUP_FILEPATH):
+    def __init__(self, name, sing_container, xstartup, debug=False):
         assert os.path.exists(APPTAINER_BIN)
-        super().__init__(name, debug, sing_container, xstartup)
+        super().__init__(name, sing_container, xstartup, debug)
         self.subnode = None
 
     def find_nodes(self, job_name="vnc"):
@@ -543,7 +545,6 @@ class LoginNode(Node):
                     proc.kill()
                     msg = f"Warning: Already allocating node with job {job_id}"
                     print(msg)
-                    print("Please try again later or run again with '--skip-check' argument")
                     if self.debug:
                         logging.info(f"name: {name}")
                         logging.info(f"job_id: {job_id}")
@@ -560,7 +561,7 @@ class LoginNode(Node):
                 elif self.debug:
                     msg = f"Found active subnode {name} with job ID {job_id}"
                     logging.debug(msg)
-                tmp = SubNode(name, job_id, self.debug)
+                tmp = SubNode(name, job_id, '', '', self.debug)
                 ret.add(tmp)
         return None
 
@@ -730,7 +731,7 @@ class LoginNode(Node):
 
         assert subnode_job_id is not None
         assert subnode_name is not None
-        self.subnode = SubNode(name=subnode_name, job_id=subnode_job_id, debug=self.debug, sing_container=self.sing_container)
+        self.subnode = SubNode(subnode_name, subnode_job_id, self.sing_container, self.xstartup)
         return self.subnode
 
     def cancel_job(self, job_id:int):
@@ -873,7 +874,7 @@ class LoginNode(Node):
         if self.get_time_left(job_id) is not None:
             port_map = node_port_map[node_name]
             if port_map is not None:
-                subnode = SubNode(name=node_name, job_id=job_id, debug=self.debug, sing_container=self.sing_container)
+                subnode = SubNode(node_name, job_id, self.sing_container, '', self.debug)
                 for vnc_port in port_map.keys():
                     display_number = vnc_port - BASE_VNC_PORT
                     if self.debug:
@@ -995,108 +996,121 @@ def check_auth_keys():
             return True
     return False
 
-def main():
+def create_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--partition',
-                    dest='partition',
-                    metavar='<partition>',
-                    help='Slurm partition',
-                    default=PARTITION,
-                    type=str)
-    parser.add_argument('-A', '--account',
-                    dest='account',
-                    metavar='<account>',
-                    help='Slurm account',
-                    default=ACCOUNT,
-                    type=str)
-    parser.add_argument('-J',
-                    dest='job_name',
-                    metavar='<job_name>',
-                    help='Slurm job name',
-                    default=JOB_NAME,
-                    type=str)
-    parser.add_argument('--timeout',
-                    dest='timeout',
-                    metavar='<time_in_seconds>',
-                    help='Slurm node allocation and VNC startup timeout length (in seconds)',
-                    default=TIMEOUT,
-                    type=int)
-    parser.add_argument('--port',
-                    dest='u2h_port',
-                    metavar='<port_to_hyak>',
-                    help='User<->Hyak Port override',
-                    type=int)
-    parser.add_argument('-t', '--time',
-                    dest='time',
-                    metavar='<time_in_hours>',
-                    help='Subnode reservation time (in hours)',
-                    default=RES_TIME,
-                    type=int)
-    parser.add_argument('-c', '--cpus',
-                    dest='cpus',
-                    metavar='<num_cpus>',
-                    help='Subnode cpu count',
-                    default=CPUS,
-                    type=int)
-    parser.add_argument('--mem',
-                    dest='mem',
-                    metavar='<NUM[KMGT]>',
-                    help='Subnode memory',
-                    default=MEM,
-                    type=str)
-    parser.add_argument('--status',
-                    dest='print_status',
-                    action='store_true',
-                    help='Print VNC jobs and other details, and then exit')
-    parser.add_argument('--kill',
-                    dest='kill_job_id',
-                    metavar='<job_id>',
-                    help='Kill specified VNC session, cancel its VNC job, and exit',
-                    type=int)
-    parser.add_argument('--kill-all',
-                    dest='kill_all',
-                    action='store_true',
-                    help='Kill all VNC sessions, cancel VNC jobs, and exit')
-    parser.add_argument('--set-passwd',
-                    dest='set_passwd',
-                    action='store_true',
-                    help='Prompts for new VNC password and exit')
-    parser.add_argument('--container',
-                    dest='sing_container',
-                    metavar='<path_to_container.sif>',
-                    help='Path to VNC Apptainer/Singularity Container (.sif)',
-                    default=XFCE_CONTAINER,
-                    type=str)
-    parser.add_argument('--xstartup',
-                    dest='xstartup',
-                    metavar='<path_to_xstartup>',
-                    help='Path to xstartup script',
-                    default=XSTARTUP_FILEPATH,
-                    type=str)
-    parser.add_argument('--repair',
-                    dest='repair',
-                    action='store_true',
-                    help='Repair all missing/broken LoginNode<->SubNode port forwards, and then exit')
+    subparsers = parser.add_subparsers(dest='command')
+
+    # general arguments
     parser.add_argument('-d', '--debug',
                     dest='debug',
                     action='store_true',
                     help='Enable debug logging')
-    parser.add_argument('--skip-check',
-                    dest='skip_check',
-                    action='store_true',
-                    help='Skip node check and create a new VNC session')
     parser.add_argument('-v', '--version',
                     dest='print_version',
                     action='store_true',
                     help='Print program version and exit')
+    parser.add_argument('-J',
+                    dest='job_name',
+                    metavar='<job_name>',
+                    help='Slurm job name',
+                    default='hyakvnc',
+                    type=str)
+
+    # create command
+    parser_create = subparsers.add_parser('create',
+                    help='Create VNC session')
+    parser_create.add_argument('-p', '--partition',
+                    dest='partition',
+                    metavar='<partition>',
+                    help='Slurm partition',
+                    required=True,
+                    type=str)
+    parser_create.add_argument('-A', '--account',
+                    dest='account',
+                    metavar='<account>',
+                    help='Slurm account',
+                    required=True,
+                    type=str)
+    parser_create.add_argument('--timeout',
+                    dest='timeout',
+                    metavar='<time_in_seconds>',
+                    help='[default: 120] Slurm node allocation and VNC startup timeout length (in seconds)',
+                    default=120,
+                    type=int)
+    parser_create.add_argument('--port',
+                    dest='u2h_port',
+                    metavar='<port_to_hyak>',
+                    help='User<->Hyak Port override',
+                    type=int)
+    parser_create.add_argument('-t', '--time',
+                    dest='time',
+                    metavar='<time_in_hours>',
+                    help='Subnode reservation time (in hours)',
+                    required=True,
+                    type=int)
+    parser_create.add_argument('-c', '--cpus',
+                    dest='cpus',
+                    metavar='<num_cpus>',
+                    help='Subnode cpu count',
+                    required=True,
+                    type=int)
+    parser_create.add_argument('--mem',
+                    dest='mem',
+                    metavar='<NUM[K|M|G|T]>',
+                    help='Subnode memory amount with units',
+                    required=True,
+                    type=str)
+    parser_create.add_argument('--container',
+                    dest='sing_container',
+                    metavar='<path_to_container.sif>',
+                    help='Path to VNC Apptainer/Singularity Container (.sif)',
+                    required=True,
+                    type=str)
+    parser_create.add_argument('--xstartup',
+                    dest='xstartup',
+                    metavar='<path_to_xstartup>',
+                    help='Path to xstartup script',
+                    required=True,
+                    type=str)
+
+    # status command
+    parser_status = subparsers.add_parser('status',
+                    help='Print details of all VNC jobs with given job name and exit')
+
+    # kill command
+    parser_kill = subparsers.add_parser('kill',
+                    help='Kill specified job')
+    parser_kill.add_argument('job_id',
+                    metavar='<job_id>',
+                    help='Kill specified VNC session, cancel its VNC job, and exit',
+                    type=int)
+
+    # kill-all command
+    parser_kill_all = subparsers.add_parser('kill-all',
+                    help='Cancel all VNC jobs with given job name and exit')
+
+    # set-passwd command
+    parser_set_passwd = subparsers.add_parser('set-passwd',
+                    help='Prompts for new VNC password and exit')
+    parser_set_passwd.add_argument('--container',
+                    dest='sing_container',
+                    metavar='<path_to_container.sif>',
+                    help='Path to VNC Apptainer Container (.sif)',
+                    required=True,
+                    type=str)
+
+    # repair command
+    parser_repair = subparsers.add_parser('repair',
+                    help='Repair all missing/broken LoginNode<->SubNode port forwards, and then exit')
+
+    return parser
+
+def main():
+    parser = create_parser()
     args = parser.parse_args()
 
-    # check memory format
-    assert(re.match("[0-9]+[KMGT]", args.mem))
-
-    if args.print_version:
-        print(f"hyakvnc.py {VERSION}")
-        exit(0)
+    if args.command is None:
+        parser.print_help()
 
     # Debug: setup logging
     if args.debug:
@@ -1106,24 +1120,16 @@ def main():
             os.remove(log_filepath)
         logging.basicConfig(filename=log_filepath, level=logging.DEBUG)
 
-    # Debug: print passed arguments
-    if args.debug:
+        # print passed arguments
         print("Arguments:")
         for item in vars(args):
             msg = f"{item}: {vars(args)[item]}"
             print(f"\t{msg}")
             logging.debug(msg)
 
-    # check if running script on login node
-    hostname = os.uname()[1]
-    on_subnode = re.match("[ngz]([0-9]{4}).hyak.local", hostname)
-    on_loginnode = hostname in LOGIN_NODE_LIST
-    if on_subnode or not on_loginnode:
-        msg = "Error: Please run on login node."
-        print(msg)
-        if args.debug:
-            logging.error(msg)
-        exit(1)
+    if args.print_version:
+        print(f"hyakvnc.py {VERSION}")
+        exit(0)
 
     # check if authorized_keys contains klone to allow intracluster ssh access
     # Reference:
@@ -1177,6 +1183,8 @@ def main():
         if args.debug:
             logging.info("Already authorized for intracluster access.")
 
+    assert os.path.exists(AUTH_KEYS_FILEPATH)
+
     # delete ~/.ssh/known_hosts in case Hyak maintenance causes node identity
     # mismatch. This can break ssh connection to subnode and cause port
     # forwarding to subnode to fail.
@@ -1184,142 +1192,158 @@ def main():
     if os.path.exists(ssh_known_hosts):
         os.remove(ssh_known_hosts)
 
-    # create login node object
-    hyak = LoginNode(hostname, args.debug, args.sing_container, args.xstartup)
+    # check if running script on login node
+    hostname = os.uname()[1]
+    on_subnode = re.match("[ngz]([0-9]{4}).hyak.local", hostname)
+    on_loginnode = hostname in LOGIN_NODE_LIST
+    if on_subnode or not on_loginnode:
+        msg = "Error: Please run on login node."
+        print(msg)
+        if args.debug:
+            logging.error(msg)
 
-    # set VNC password at user's request or if missing
-    if not hyak.check_vnc_password() or args.set_passwd:
+
+    if args.command == 'create':
+        assert os.path.exists(args.sing_container)
+        assert os.path.exists(args.xstartup)
+
+        # create login node object
+        hyak = LoginNode(hostname, args.sing_container, args.xstartup, args.debug)
+
+        # check memory format
+        assert(re.match("[0-9]+[KMGT]", args.mem))
+
+        # set VNC password at user's request or if missing
+        if not hyak.check_vnc_password():
+            if args.debug:
+                logging.info("Setting new VNC password...")
+            print("Please set new VNC password...")
+            hyak.set_vnc_password()
+
+        # reserve node
+        subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.mem, args.partition, args.account, args.job_name)
+        if subnode is None:
+            exit(1)
+
+        print(f"...Node {subnode.name} reserved with Job ID: {subnode.job_id}")
+
+        def __irq_handler__(signalNumber, frame):
+            """
+            Cancel job and exit program.
+            """
+            if args.debug:
+                msg = f"main: Caught signal: {signalNumber}"
+                print(msg)
+                logging.info(msg)
+            print("Cancelling job...")
+            hyak.cancel_job(subnode.job_id)
+            print("Exiting...")
+            exit(1)
+
+        # Cancel job and exit when SIGINT (CTRL+C) or SIGTSTP (CTRL+Z) signals are
+        # detected.
+        signal.signal(signal.SIGINT, __irq_handler__)
+        signal.signal(signal.SIGTSTP, __irq_handler__)
+
+        # start vnc
+        if not subnode.start_vnc(timeout=args.timeout):
+            hyak.cancel_job(subnode.job_id)
+            exit(1)
+
+        # get unused User<->Login port
+        if args.u2h_port is not None and hyak.check_port(args.u2h_port):
+            hyak.u2h_port = args.u2h_port
+        else:
+            hyak.u2h_port = hyak.get_port()
+
+        # quit if port is still bad
+        if hyak.u2h_port is None:
+            msg = "Error: Unable to get port"
+            print(msg)
+            if args.debug:
+                logging.error(msg)
+            hyak.cancel_job(subnode.job_id)
+            exit(1)
+
+        if args.debug:
+            hyak.print_props()
+
+        # create port forward between login and sub nodes
+        if not hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port):
+            hyak.cancel_job(subnode.job_id)
+            exit(1)
+
+        # print command to setup User<->Login port forwarding
+        print("=====================")
+        print("Run the following in a new terminal window:")
+        msg = f"ssh -N -f -L {hyak.u2h_port}:127.0.0.1:{hyak.u2h_port} {os.getlogin()}@klone.hyak.uw.edu"
+        print(f"\t{msg}")
+        if args.debug:
+            logging.debug(msg)
+        print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
+        print("=====================")
+    elif args.command == 'set-passwd':
+        assert os.path.exists(args.sing_container)
+
+        # create login node object
+        hyak = LoginNode(hostname, args.sing_container, '', args.debug)
+
         if args.debug:
             logging.info("Setting new VNC password...")
         print("Please set new VNC password...")
         hyak.set_vnc_password()
-        if args.set_passwd:
-            exit(0)
+    elif args.command is not None:
+        # create login node object
+        hyak = LoginNode(hostname, '', '', args.debug)
 
-    # check for existing subnodes with same job name
-    node_set = hyak.find_nodes(args.job_name)
-    if not args.print_status and not args.kill_all and args.kill_job_id is None and not args.skip_check and not args.repair:
-        if node_set is not None:
-            for node in node_set:
-                print(f"Error: Found active subnode {node.name} with job ID {node.job_id}")
-            exit(1)
+        # check for existing subnodes with same job name
+        node_set = hyak.find_nodes(args.job_name)
 
-    # get port forwards (and display numbers)
-    node_port_map = hyak.get_port_forwards(node_set)
+        # get port forwards (and display numbers)
+        node_port_map = hyak.get_port_forwards(node_set)
 
-    if args.repair:
-        # repair broken port forwards
-        hyak.repair_ln_sn_port_forwards(node_set, node_port_map)
-        exit(0)
-
-    if args.print_status:
-        hyak.print_status(args.job_name, node_set, node_port_map)
-        exit(0)
-
-    if args.kill_job_id is not None:
-        # kill single VNC job with same job name
-        msg = f"Attempting to kill {args.kill_job_id}"
-        print(msg)
-        if args.debug:
-            logging.info(msg)
-        if node_set is not None:
-            # find target job (with same job name) and quit
-            for node in node_set:
-                if re.match(str(node.job_id), str(args.kill_job_id)):
-                    if args.debug:
-                        logging.info("Found kill target")
-                        logging.info(f"\tVNC display number: {node.vnc_display_number}")
-                    # kill vnc session
-                    port_forward = hyak.get_job_port_forward(node.job_id, node.name, node_port_map)
-                    if port_forward:
-                        node.kill_vnc(port_forward[0] - BASE_VNC_PORT)
-                    # cancel job
-                    hyak.cancel_job(args.kill_job_id)
-                    exit(0)
-        msg = f"{args.kill_job_id} is not claimed or already killed"
-        print(f"Error: {msg}")
-        if args.debug:
-            logging.error(msg)
-        exit(1)
-
-    if args.kill_all:
-        # kill all VNC jobs with same job name
-        msg = f"Killing all VNC sessions with job name {args.job_name}..."
-        print(msg)
-        if args.debug:
-            logging.debug(msg)
-        if node_set is not None:
-            for node in node_set:
-                # kill all vnc sessions
-                node.kill_vnc()
-                # cancel job
-                hyak.cancel_job(node.job_id)
-        exit(0)
-
-    # reserve node
-    # TODO: allow node count override (harder to implement)
-    subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.mem, args.partition, args.account, args.job_name)
-    if subnode is None:
-        exit(1)
-
-    print(f"...Node {subnode.name} reserved with Job ID: {subnode.job_id}")
-
-    def __irq_handler__(signalNumber, frame):
-        """
-        Cancel job and exit program.
-        """
-        if args.debug:
-            msg = f"main: Caught signal: {signalNumber}"
+        if args.command == 'repair':
+            # repair broken port forwards
+            hyak.repair_ln_sn_port_forwards(node_set, node_port_map)
+        elif args.command == 'status':
+            hyak.print_status(args.job_name, node_set, node_port_map)
+        elif args.command == 'kill':
+            # kill single VNC job with same job name
+            msg = f"Attempting to kill {args.job_id}"
             print(msg)
-            logging.info(msg)
-        print("Cancelling job...")
-        hyak.cancel_job(subnode.job_id)
-        print("Exiting...")
-        exit(1)
-
-    # Cancel job and exit when SIGINT (CTRL+C) or SIGTSTP (CTRL+Z) signals are
-    # detected.
-    signal.signal(signal.SIGINT, __irq_handler__)
-    signal.signal(signal.SIGTSTP, __irq_handler__)
-
-    # start vnc
-    if not subnode.start_vnc(timeout=args.timeout):
-        hyak.cancel_job(subnode.job_id)
-        exit(1)
-
-    # get unused User<->Login port
-    if args.u2h_port is not None and hyak.check_port(args.u2h_port):
-        hyak.u2h_port = args.u2h_port
-    else:
-        hyak.u2h_port = hyak.get_port()
-
-    # quit if port is still bad
-    if hyak.u2h_port is None:
-        msg = "Error: Unable to get port"
-        print(msg)
-        if args.debug:
-            logging.error(msg)
-        hyak.cancel_job(subnode.job_id)
-        exit(1)
-
-    if args.debug:
-        hyak.print_props()
-
-    # create port forward between login and sub nodes
-    if not hyak.create_port_forward(hyak.u2h_port, subnode.vnc_port):
-        hyak.cancel_job(subnode.job_id)
-        exit(1)
-
-    # print command to setup User<->Login port forwarding
-    print("=====================")
-    print("Run the following in a new terminal window:")
-    msg = f"ssh -N -f -L {hyak.u2h_port}:127.0.0.1:{hyak.u2h_port} {os.getlogin()}@klone.hyak.uw.edu"
-    print(f"\t{msg}")
-    if args.debug:
-        logging.debug(msg)
-    print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
-    print("=====================")
-
+            if args.debug:
+                logging.info(msg)
+            if node_set is not None:
+                # find target job (with same job name) and quit
+                for node in node_set:
+                    if re.match(str(node.job_id), str(args.job_id)):
+                        if args.debug:
+                            logging.info("Found kill target")
+                            logging.info(f"\tVNC display number: {node.vnc_display_number}")
+                        # kill vnc session
+                        port_forward = hyak.get_job_port_forward(node.job_id, node.name, node_port_map)
+                        if port_forward:
+                            node.kill_vnc(port_forward[0] - BASE_VNC_PORT)
+                        # cancel job
+                        hyak.cancel_job(args.job_id)
+                        exit(0)
+            msg = f"{args.job_id} is not claimed or already killed"
+            print(f"Error: {msg}")
+            if args.debug:
+                logging.error(msg)
+            exit(1)
+        elif args.command == 'kill-all':
+            # kill all VNC jobs with same job name
+            msg = f"Killing all VNC sessions with job name {args.job_name}..."
+            print(msg)
+            if args.debug:
+                logging.debug(msg)
+            if node_set is not None:
+                for node in node_set:
+                    # kill all vnc sessions
+                    node.kill_vnc()
+                    # cancel job
+                    hyak.cancel_job(node.job_id)
     exit(0)
 
 if __name__ == "__main__":
