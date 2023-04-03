@@ -1,0 +1,23 @@
+[project]
+name = "hyakvnc"
+version = "1.2"
+description = "Create and manage VNC sessions on HYAK Klone."
+authors = [
+    {name = "Hansem Ro", email = "hansem7@uw.edu"},
+]
+dependencies = []
+requires-python = ">=3.6"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+hyakvnc = "hyakvnc:main"
+
+[project.urls]
+homepage = ""
