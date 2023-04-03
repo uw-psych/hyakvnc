@@ -11,9 +11,10 @@ VERSION = 2.0
 #      $ cd hyakvnc
 #      $ python3 -m pip install --user .
 #
-# 2. To start VNC session for 5 hours on node with 16 cores and 32GB of memory,
-#    run the following
-#      $ hyakvnc create -t 5 -c 16 --mem 32G \
+# 2. To start VNC session (on `ece` computing resources) for 5 hours on a node
+#    with 16 cores and 32GB of memory, run the following
+#      $ hyakvnc create -A ece -p compute-hugemem \
+#               -t 5 -c 16 --mem 32G \
 #               --container /path/to/container.sif \
 #               --xstartup /path/to/xstartup
 #      ...
