@@ -8,6 +8,7 @@ authors = [
 dependencies = []
 requires-python = ">=3.6"
 license = {text = "MIT"}
+readme = "README.md"
 
 [build-system]
 requires = ["pdm-pep517"]
