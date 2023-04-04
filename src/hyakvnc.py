@@ -1110,9 +1110,6 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    if args.command is None:
-        parser.print_help()
-
     # Debug: setup logging
     if args.debug:
         log_filepath = os.path.expanduser("~/hyakvnc.log")
@@ -1130,6 +1127,9 @@ def main():
 
     if args.print_version:
         print(f"hyakvnc.py {VERSION}")
+        exit(0)
+    if args.command is None:
+        parser.print_help()
         exit(0)
 
     # check if authorized_keys contains klone to allow intracluster ssh access
