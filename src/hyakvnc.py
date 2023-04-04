@@ -957,7 +957,7 @@ class LoginNode(Node):
                 if node_port_map and node_port_map[node.name]:
                     print(f"{node.name} with job ID {node.job_id} already has valid port forward")
                 else:
-                    subnode = SubNode(name=node.name, job_id=node.job_id, debug=self.debug, sing_container=self.sing_container)
+                    subnode = SubNode(node.name, node.job_id, self.sing_container, self.xstartup, self.debug)
                     subnode_pids = subnode.list_pids()
                     # search for vnc process
                     proc = subnode.run_command("ps x | grep vnc")
