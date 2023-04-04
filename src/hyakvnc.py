@@ -179,7 +179,7 @@ APPTAINER_BINDPATH = os.getenv("APPTAINER_BINDPATH")
 if APPTAINER_BINDPATH is None:
     APPTAINER_BINDPATH = os.getenv("SINGULARITY_BINDPATH")
 if APPTAINER_BINDPATH is None:
-    APPTAINER_BINDPATH = "/tmp:/tmp,$HOME,$PWD,/gscratch,/opt:/opt,/:/hyak_root"
+    APPTAINER_BINDPATH = "/tmp,$HOME,$PWD,/gscratch,/opt,/:/hyak_root,/sw,/mmfs1"
 
 class Node:
     """
