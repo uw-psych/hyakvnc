@@ -31,7 +31,7 @@ Update pip:
 python3 -m pip install --upgrade --user pip
 ```
 
-Build and install the package from repo:
+Build and install the package:
 
 ```bash
 python3 -m pip install --user git+https://github.com/uw-psych/hyakvnc
@@ -146,7 +146,6 @@ Active hyakvnc jobs:
 After repairing port forwarding:
 
 ```
-Active hyakvnc jobs:
 Active hyakvnc jobs:
         Job ID: NNNNNNNN
                 SubNode: n3050
