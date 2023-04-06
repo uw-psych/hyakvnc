@@ -65,6 +65,9 @@ VERSION = 2.0
 #       -p <port>, --port <port> : [default: automatically found] override
 #                                  User<->LoginNode port
 #
+#       -G [type:]<ngpus>, --gpus [type:]<ngpus> : [default: '0'] GPU count
+#                                                  with optional type specifier
+#
 #     Required arguments for create:
 #
 #       -p <part>, --partition <part> : Slurm partition
@@ -183,26 +186,34 @@ if APPTAINER_BINDPATH is None:
 
 class Node:
     """
-    The Node class has the following initial data: bool: debug, string: name,
-    string: sing_exec.
+    The Node class has the following initial data: bool: debug, string: name.
 
     debug: Print and log debug messages if True.
     name: Shortened hostname of node.
-    sing_exec: Added before command to execute inside a singularity container
     """
 
     def __init__(self, name, sing_container, xstartup, debug=False):
         self.debug = debug
         self.name = name
-        self.sing_exec = f"{APPTAINER_BIN} exec -B {APPTAINER_BINDPATH} {sing_container}"
         self.sing_container = os.path.abspath(sing_container)
         self.xstartup = os.path.abspath(xstartup)
+
+    def get_sing_exec(self, args=''):
+        """
+        Added before command to execute inside an apptainer (singularity) container.
+
+        Arg:
+          args: Optional arguments passed to `apptainer exec`
+
+        Return apptainer exec string
+        """
+        return f"{APPTAINER_BIN} exec {args} -B {APPTAINER_BINDPATH} {self.sing_container}"
 
 class SubNode(Node):
     """
     The SubNode class specifies a node requested via Slurm (also known as work
     or interactive node). SubNode class is initialized with the following:
-    bool: debug, string: name, string: sing_exec, string: hostname, int: job_id.
+    bool: debug, string: name, string: hostname, int: job_id.
 
     SubNode class with active VNC session may contain vnc_display_number and
     vnc_port.
@@ -213,7 +224,6 @@ class SubNode(Node):
     job_id: Slurm Job ID that allocated the node.
     vnc_display_number: X display number used for VNC session.
     vnc_port: vnc_display_number + BASE_VNC_PORT.
-    sing_exec: Added before command to execute inside singularity container.
     """
 
     def __init__(self, name, job_id, sing_container, xstartup, debug=False):
@@ -317,13 +327,14 @@ class SubNode(Node):
             logging.debug(f"check_vnc: Checking VNC PID {pid}")
         return self.check_pid(pid)
 
-    def start_vnc(self, display_number=None, timeout=20):
+    def start_vnc(self, display_number=None, extra_args='', timeout=20):
         """
         Starts VNC session
 
         Args:
           display_number: Attempt to acquire specified display number if set.
                           If None, then let vncserver determine display number.
+          extra_args: Optional arguments passed to `apptainer exec`
           timeout: timeout length in seconds
 
         Returns True if VNC session was started successfully and False otherwise
@@ -331,7 +342,7 @@ class SubNode(Node):
         target = ""
         if display_number is not None:
             target = f":{display_number}"
-        vnc_cmd = f"{self.sing_exec} vncserver {target} -xstartup {self.xstartup} &"
+        vnc_cmd = f"{self.get_sing_exec(extra_args)} vncserver {target} -xstartup {self.xstartup} &"
         if not self.debug:
             print("Starting VNC server...", end="", flush=True)
         proc = self.run_command(vnc_cmd, timeout=timeout)
@@ -373,7 +384,7 @@ class SubNode(Node):
         """
         active = list()
         stale = list()
-        cmd = f"{self.sing_exec} vncserver -list"
+        cmd = f"{self.get_sing_exec()} vncserver -list"
         #TigerVNC server sessions:
         #
         #X DISPLAY #	PROCESS ID
@@ -468,7 +479,7 @@ class SubNode(Node):
             if self.debug:
                 print(f"Attempting to kill VNC session {target}")
                 logging.debug(f"Attempting to kill VNC session {target}")
-            cmd = f"{self.sing_exec} vncserver -kill {target}"
+            cmd = f"{self.get_sing_exec()} vncserver -kill {target}"
             proc = self.run_command(cmd)
             killed = False
             while proc.poll() is None:
@@ -576,7 +587,7 @@ class LoginNode(Node):
         """
         Set VNC password
         """
-        cmd = f"{self.sing_exec} vncpasswd"
+        cmd = f"{self.get_sing_exec()} vncpasswd"
         self.call_command(cmd)
 
     def call_command(self, command:str):
@@ -618,7 +629,7 @@ class LoginNode(Node):
         elif isinstance(command, str):
             return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-    def reserve_node(self, res_time=3, timeout=10, cpus=8, mem="16G", partition="compute-hugemem", account="ece", job_name="vnc"):
+    def reserve_node(self, res_time=3, timeout=10, cpus=8, gpus="0", mem="16G", partition="compute-hugemem", account="ece", job_name="vnc"):
         """
         Reserves a node and waits until the node has been acquired.
 
@@ -626,6 +637,8 @@ class LoginNode(Node):
           res_time: Number of hours to reserve sub node
           timeout: Number of seconds to wait for node allocation
           cpus: Number of cpus to allocate
+          gpus: Number of gpus to allocate with optional type specifier
+                (Examples: "a40:2" for NVIDIA A40, "1" for single GPU)
           mem: Amount of memory to allocate (Examples: "8G" for 8GiB of memory)
           partition: Partition name (see `man salloc` on --partition option for more information)
           account: Account name (see `man salloc` on --account option for more information)
@@ -640,6 +653,7 @@ class LoginNode(Node):
                 "-A", account,
                 "-t", f"{res_time}:00:00",
                 "--mem=" + mem,
+                "--gpus=" + gpus,
                 "-c", str(cpus)]
         proc = self.run_command(cmd)
 
@@ -664,7 +678,7 @@ class LoginNode(Node):
         signal.signal(signal.SIGINT, __reserve_node_irq_handler__)
         signal.signal(signal.SIGTSTP, __reserve_node_irq_handler__)
 
-        print(f"Allocating node with {cpus} CPUs and {mem} RAM for {res_time} hours...")
+        print(f"Allocating node with {cpus} CPU(s), {gpus.split(':').pop()} GPU(s), and {mem} RAM for {res_time} hours...")
         while proc.poll() is None and not alloc_stat:
             print("...")
             line = str(proc.stdout.readline(), 'utf-8').strip()
@@ -1055,6 +1069,12 @@ def create_parser():
                     help='Subnode cpu count',
                     required=True,
                     type=int)
+    parser_create.add_argument('-G', '--gpus',
+                    dest='gpus',
+                    metavar='[type:]<num_gpus>',
+                    help='Subnode gpu count',
+                    default='0',
+                    type=str)
     parser_create.add_argument('--mem',
                     dest='mem',
                     metavar='<NUM[K|M|G|T]>',
@@ -1222,7 +1242,7 @@ def main():
             hyak.set_vnc_password()
 
         # reserve node
-        subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.mem, args.partition, args.account, args.job_name)
+        subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.gpus, args.mem, args.partition, args.account, args.job_name)
         if subnode is None:
             exit(1)
 
@@ -1246,8 +1266,14 @@ def main():
         signal.signal(signal.SIGINT, __irq_handler__)
         signal.signal(signal.SIGTSTP, __irq_handler__)
 
+        gpu_count = int(args.gpus.split(':').pop())
+        sing_exec_args = ''
+        if gpu_count > 0:
+            # Use `--nv` apptainer argument to bind CUDA driver and library
+            sing_exec_args = '--nv'
+
         # start vnc
-        if not subnode.start_vnc(timeout=args.timeout):
+        if not subnode.start_vnc(extra_args=sing_exec_args, timeout=args.timeout):
             hyak.cancel_job(subnode.job_id)
             exit(1)
 
