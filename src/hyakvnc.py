@@ -632,7 +632,7 @@ class LoginNode(Node):
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
 
-    def reserve_node(self, res_time=3, timeout=10, cpus=8, gpus="0",
+    def reserve_node(self, res_time=3, timeout=120, cpus=8, gpus="0",
                      mem="16G",
                      partition="compute-hugemem", account="ece",
                      job_name="vnc"):
@@ -769,7 +769,7 @@ class LoginNode(Node):
         proc = self.run_command(["scancel", str(job_id)])
         print(str(proc.communicate()[0], 'utf-8'))
 
-    def check_port(self, port:int):
+    def check_port(self, port: int):
         """
         Returns True if port is unused and False if used.
         """
@@ -1288,7 +1288,16 @@ def main():
             hyak.set_vnc_password()
 
         # reserve node
-        subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.gpus, args.mem, args.partition, args.account, args.job_name)
+        subnode = hyak.reserve_node(
+            args.time,
+            args.timeout,
+            args.cpus,
+            args.gpus,
+            args.mem,
+            args.partition,
+            args.account,
+            args.job_name)
+
         if subnode is None:
             exit(1)
 
@@ -1319,7 +1328,8 @@ def main():
             sing_exec_args = '--nv'
 
         # start vnc
-        if not subnode.start_vnc(extra_args=sing_exec_args, timeout=args.timeout):
+        if not subnode.start_vnc(extra_args=sing_exec_args,
+                                 timeout=args.timeout):
             hyak.cancel_job(subnode.job_id)
             exit(1)
 
