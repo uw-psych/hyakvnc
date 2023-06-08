@@ -22,26 +22,37 @@ Before running `hyakvnc`, you'll need the following:
 - VNC Apptainer with TigerVNC server and a desktop environment
     - Install additional tools and libraries to the container as required by
       programs running within the VNC session.
-- xstartup script used to launch a desktop environment
+      Container configuration and instructions to build are in https://github.com/uw-psych/hyak_vnc_apptainer
+
+- xstartup script used to launch a desktop environment. This can be downloaded
+  by issuing the following command:
+
+```bash
+wget https://raw.githubusercontent.com/uw-psych/hyak_vnc_apptainer/main/xfce4_config/xstartup
+```
 
 ### Building
 
+
+All installation needs to be done in a fresh conda environment.
+
 Update pip:
+
 ```bash
-python3 -m pip install --upgrade --user pip
+python -m pip install --upgrade --user pip
 ```
 
 Build and install the package:
 
 ```bash
-python3 -m pip install --user git+https://github.com/uw-psych/hyakvnc
+python -m pip install --user git+https://github.com/uw-psych/hyakvnc
 ```
 
 Or, clone the repo and install the package locally:
 
 ```bash
 git clone https://github.com/uw-psych/hyakvnc
-python3 -m pip install --user .
+python -m pip install --user .
 ```
 
 If successful, then `hyakvnc` should be installed to `~/.local/bin/`.

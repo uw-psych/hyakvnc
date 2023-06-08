@@ -625,11 +625,17 @@ class LoginNode(Node):
             print(msg)
             logging.debug(msg)
         if isinstance(command, list):
-            return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return subprocess.Popen(command, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
         elif isinstance(command, str):
-            return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return subprocess.Popen(command, shell=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
 
-    def reserve_node(self, res_time=3, timeout=10, cpus=8, gpus="0", mem="16G", partition="compute-hugemem", account="ece", job_name="vnc"):
+    def reserve_node(self, res_time=3, timeout=10, cpus=8, gpus="0",
+                     mem="16G",
+                     partition="compute-hugemem", account="ece",
+                     job_name="vnc"):
         """
         Reserves a node and waits until the node has been acquired.
 
@@ -784,7 +790,7 @@ class LoginNode(Node):
         Returns unused port number if found and None if not found.
         """
         # 300 is arbitrary limit
-        for i in range(0,300):
+        for i in range(0, 300):
             port = BASE_VNC_PORT + i
             if self.check_port(port):
                 return port
@@ -942,7 +948,9 @@ class LoginNode(Node):
             for node in node_set:
                 mapped_port = None
                 if node_port_map and node_port_map[node.name]:
-                    port_forward = self.get_job_port_forward(node.job_id, node.name, node_port_map)
+                    port_forward = self.get_job_port_forward(node.job_id,
+                                                             node.name,
+                                                             node_port_map)
                     if port_forward:
                         vnc_port = port_forward[0]
                         mapped_port = port_forward[1]
@@ -1013,116 +1021,148 @@ def check_auth_keys():
 
 def create_parser():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='command')
 
     # general arguments
     parser.add_argument('-d', '--debug',
-                    dest='debug',
-                    action='store_true',
-                    help='Enable debug logging')
+                        dest='debug',
+                        action='store_true',
+                        help='Enable debug logging')
+
     parser.add_argument('-v', '--version',
-                    dest='print_version',
-                    action='store_true',
-                    help='Print program version and exit')
+                        dest='print_version',
+                        action='store_true',
+                        help='Print program version and exit')
+
     parser.add_argument('-J',
-                    dest='job_name',
-                    metavar='<job_name>',
-                    help='Slurm job name',
-                    default='hyakvnc',
-                    type=str)
+                        dest='job_name',
+                        metavar='<job_name>',
+                        help='Slurm job name',
+                        default='hyakvnc',
+                        type=str)
+
+    subparsers = parser.add_subparsers(dest='command')
 
     # create command
-    parser_create = subparsers.add_parser('create',
-                    help='Create VNC session')
-    parser_create.add_argument('-p', '--partition',
-                    dest='partition',
-                    metavar='<partition>',
-                    help='Slurm partition',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('-A', '--account',
-                    dest='account',
-                    metavar='<account>',
-                    help='Slurm account',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('--timeout',
-                    dest='timeout',
-                    metavar='<time_in_seconds>',
-                    help='[default: 120] Slurm node allocation and VNC startup timeout length (in seconds)',
-                    default=120,
-                    type=int)
-    parser_create.add_argument('--port',
-                    dest='u2h_port',
-                    metavar='<port_to_hyak>',
-                    help='User<->Hyak Port override',
-                    type=int)
-    parser_create.add_argument('-t', '--time',
-                    dest='time',
-                    metavar='<time_in_hours>',
-                    help='Subnode reservation time (in hours)',
-                    required=True,
-                    type=int)
-    parser_create.add_argument('-c', '--cpus',
-                    dest='cpus',
-                    metavar='<num_cpus>',
-                    help='Subnode cpu count',
-                    required=True,
-                    type=int)
-    parser_create.add_argument('-G', '--gpus',
-                    dest='gpus',
-                    metavar='[type:]<num_gpus>',
-                    help='Subnode gpu count',
-                    default='0',
-                    type=str)
-    parser_create.add_argument('--mem',
-                    dest='mem',
-                    metavar='<NUM[K|M|G|T]>',
-                    help='Subnode memory amount with units',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('--container',
-                    dest='sing_container',
-                    metavar='<path_to_container.sif>',
-                    help='Path to VNC Apptainer/Singularity Container (.sif)',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('--xstartup',
-                    dest='xstartup',
-                    metavar='<path_to_xstartup>',
-                    help='Path to xstartup script',
-                    required=True,
-                    type=str)
+    parser_create = subparsers.add_parser(
+        'create',
+        help='Create VNC session')
+
+    parser_create.add_argument(
+        '-p', '--partition',
+        dest='partition',
+        metavar='<partition>',
+        help='Slurm partition',
+        required=True,
+        type=str)
+
+    parser_create.add_argument(
+        '-A', '--account',
+        dest='account',
+        metavar='<account>',
+        help='Slurm account',
+        required=True,
+        type=str)
+
+    parser_create.add_argument(
+        '--timeout',
+        dest='timeout',
+        metavar='<time_in_seconds>',
+        help='[default: 120] Slurm node allocation and VNC startup timeout length (in seconds)',
+        default=120,
+        type=int)
+
+    parser_create.add_argument(
+        '--port',
+        dest='u2h_port',
+        metavar='<port_to_hyak>',
+        help='User<->Hyak Port override',
+        type=int)
+
+    parser_create.add_argument(
+        '-t', '--time',
+        dest='time',
+        metavar='<time_in_hours>',
+        help='Subnode reservation time (in hours)',
+        required=True,
+        type=int)
+
+    parser_create.add_argument(
+        '-c', '--cpus',
+        dest='cpus',
+        metavar='<num_cpus>',
+        help='Subnode cpu count',
+        required=True,
+        type=int)
+
+    parser_create.add_argument(
+        '-G', '--gpus',
+        dest='gpus',
+        metavar='[type:]<num_gpus>',
+        help='Subnode gpu count',
+        default='0',
+        type=str)
+
+    parser_create.add_argument(
+        '--mem',
+        dest='mem',
+        metavar='<NUM[K|M|G|T]>',
+        help='Subnode memory amount with units',
+        required=True,
+        type=str)
+
+    parser_create.add_argument(
+        '--container',
+        dest='sing_container',
+        metavar='<path_to_container.sif>',
+        help='Path to VNC Apptainer/Singularity Container (.sif)',
+        required=True,
+        type=str)
+
+    parser_create.add_argument(
+        '--xstartup',
+        dest='xstartup',
+        metavar='<path_to_xstartup>',
+        help='Path to xstartup script',
+        required=True,
+        type=str)
 
     # status command
-    parser_status = subparsers.add_parser('status',
-                    help='Print details of all VNC jobs with given job name and exit')
+    parser_status = subparsers.add_parser(
+        'status',
+        help='Print details of all VNC jobs with given job name and exit')
 
     # kill command
-    parser_kill = subparsers.add_parser('kill',
-                    help='Kill specified job')
-    parser_kill.add_argument('job_id',
-                    metavar='<job_id>',
-                    help='Kill specified VNC session, cancel its VNC job, and exit',
-                    type=int)
+    parser_kill = subparsers.add_parser(
+        'kill',
+        help='Kill specified job')
+    parser_kill.add_argument(
+        'job_id',
+        metavar='<job_id>',
+        help='Kill specified VNC session, cancel its VNC job, and exit',
+        type=int)
 
     # kill-all command
-    parser_kill_all = subparsers.add_parser('kill-all',
-                    help='Cancel all VNC jobs with given job name and exit')
+    parser_kill_all = subparsers.add_parser(
+        'kill-all',
+        help='Cancel all VNC jobs with given job name and exit')
 
     # set-passwd command
-    parser_set_passwd = subparsers.add_parser('set-passwd',
-                    help='Prompts for new VNC password and exit')
-    parser_set_passwd.add_argument('--container',
-                    dest='sing_container',
-                    metavar='<path_to_container.sif>',
-                    help='Path to VNC Apptainer Container (.sif)',
-                    required=True,
-                    type=str)
+    parser_set_passwd = subparsers.add_parser(
+        'set-passwd',
+        help='Prompts for new VNC password and exit')
+
+    parser_set_passwd.add_argument(
+        '--container',
+        dest='sing_container',
+        metavar='<path_to_container.sif>',
+        help='Path to VNC Apptainer Container (.sif)',
+        required=True,
+        type=str)
 
     # repair command
-    parser_repair = subparsers.add_parser('repair',
-                    help='Repair all missing/broken LoginNode<->SubNode port forwards, and then exit')
+    parser_repair = subparsers.add_parser(
+        'repair',
+        help='Repair all missing/broken LoginNode<->SubNode port forwards, and then exit')
 
     return parser
 
