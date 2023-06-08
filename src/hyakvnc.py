@@ -1019,6 +1019,7 @@ def check_auth_keys():
             return True
     return False
 
+
 def create_parser():
     parser = argparse.ArgumentParser()
 
@@ -1046,6 +1047,11 @@ def create_parser():
     parser_create = subparsers.add_parser(
         'create',
         help='Create VNC session')
+
+    parser_create.add_argument('-d', '--debug',
+                               dest='debug',
+                               action='store_true',
+                               help='Enable debug logging')
 
     parser_create.add_argument(
         '-p', '--partition',
