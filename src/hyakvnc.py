@@ -345,6 +345,7 @@ class SubNode(Node):
         vnc_cmd = f"{self.get_sing_exec(extra_args)} vncserver {target} -xstartup {self.xstartup} &"
         if not self.debug:
             print("Starting VNC server...", end="", flush=True)
+        logging.debug(vnc_cmd)
         proc = self.run_command(vnc_cmd, timeout=timeout)
 
         # get display number and port number
