@@ -26,3 +26,8 @@ hyakvnc = "hyakvnc:main"
 
 [project.urls]
 homepage = "https://github.com/uw-psych/hyakvnc"
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
