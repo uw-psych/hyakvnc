@@ -46,6 +46,15 @@ python3 -m pip install --user .
 
 If successful, then `hyakvnc` should be installed to `~/.local/bin/`.
 
+#### Optional dependencies for development
+
+The optional dependency group`[dev]` in  `pyroject.toml` includes dependencies useful for development, including [pre-commit](https://pre-commit.com/) hooks that run in order to commit to the `git` repository.
+These apply various checks, including running the `black` code formatter before the commit takes place.
+
+To ensure `pre-commit` is installed, run:
+```bash
+pip install '.[precommit]'
+``
 ### General usage
 
 `hyakvnc` is command-line tool that only works while on the login node.

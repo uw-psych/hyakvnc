@@ -3,13 +3,16 @@ name = "hyakvnc"
 version = "2.0"
 description = "Create and manage VNC sessions on HYAK Klone."
 authors = [
-    {name = "Hansem Ro", email = "hansem7@uw.edu"},
-    {name = "Altan Orhon", email = "altan@uw.edu"},
+  { name = "Hansem Ro", email = "hansem7@uw.edu" },
+  { name = "Altan Orhon", email = "altan@uw.edu" },
 ]
 dependencies = []
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = { text = "MIT" }
 readme = "README.md"
+
+[project.optional-dependencies]
+dev = ["pre-commit"]
 
 [build-system]
 requires = ["pdm-pep517"]
@@ -22,4 +25,4 @@ where = ["src"]
 hyakvnc = "hyakvnc:main"
 
 [project.urls]
-homepage = ""
+homepage = "https://github.com/uw-psych/hyakvnc"
