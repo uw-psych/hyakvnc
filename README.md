@@ -55,6 +55,7 @@ To ensure `pre-commit` is installed, run:
 ```bash
 pip install '.[precommit]'
 ``
+
 ### General usage
 
 `hyakvnc` is command-line tool that only works while on the login node.
