@@ -119,15 +119,15 @@ VERSION = 2.0
 #   - xfce4
 #   - tigervnc with vncserver
 
-import argparse # for argument handling
-import logging # for debug logging
-import time # for sleep
-import signal # for signal handling
+import argparse  # for argument handling
+import logging  # for debug logging
+import time  # for sleep
+import signal  # for signal handling
 import glob
 import pwd
-import os # for path, file/dir checking, hostname
-import subprocess # for running shell commands
-import re # for regex
+import os  # for path, file/dir checking, hostname
+import subprocess  # for running shell commands
+import re  # for regex
 
 # tasks:
 # - [x] user arguments to control hours
@@ -184,6 +184,7 @@ if APPTAINER_BINDPATH is None:
 if APPTAINER_BINDPATH is None:
     APPTAINER_BINDPATH = "/tmp,$HOME,$PWD,/gscratch,/opt,/:/hyak_root,/sw,/mmfs1"
 
+
 class Node:
     """
     The Node class has the following initial data: bool: debug, string: name.
@@ -198,7 +199,7 @@ class Node:
         self.sing_container = os.path.abspath(sing_container)
         self.xstartup = os.path.abspath(xstartup)
 
-    def get_sing_exec(self, args=''):
+    def get_sing_exec(self, args=""):
         """
         Added before command to execute inside an apptainer (singularity) container.
 
@@ -208,6 +209,7 @@ class Node:
         Return apptainer exec string
         """
         return f"{APPTAINER_BIN} exec {args} -B {APPTAINER_BINDPATH} {self.sing_container}"
+
 
 class SubNode(Node):
     """
@@ -245,7 +247,7 @@ class SubNode(Node):
             if self.debug:
                 logging.debug(msg)
 
-    def run_command(self, command:str, timeout=None):
+    def run_command(self, command: str, timeout=None):
         """
         Run command (with arguments) on subnode
 
@@ -282,11 +284,11 @@ class SubNode(Node):
             if "PID" in line:
                 pass
             elif re.match("[0-9]+", line):
-                pid = int(line.split(' ', 1)[0])
+                pid = int(line.split(" ", 1)[0])
                 ret.append(pid)
         return ret
 
-    def check_pid(self, pid:int):
+    def check_pid(self, pid: int):
         """
         Returns True if given pid is active in job_id and False otherwise.
         """
@@ -301,7 +303,7 @@ class SubNode(Node):
             hostname = self.hostname
         if display_number is None:
             display_number = self.vnc_display_number
-        assert(hostname is not None)
+        assert hostname is not None
         if display_number is not None:
             filepaths = glob.glob(os.path.expanduser(f"~/.vnc/{hostname}*:{display_number}.pid"))
             for path in filepaths:
@@ -316,8 +318,8 @@ class SubNode(Node):
         """
         Returns True if VNC session is active and False otherwise.
         """
-        assert(self.name is not None)
-        assert(self.job_id is not None)
+        assert self.name is not None
+        assert self.job_id is not None
         pid = self.get_vnc_pid(self.hostname, self.vnc_display_number)
         if pid is None:
             pid = self.get_vnc_pid(self.name, self.vnc_display_number)
@@ -327,7 +329,7 @@ class SubNode(Node):
             logging.debug(f"check_vnc: Checking VNC PID {pid}")
         return self.check_pid(pid)
 
-    def start_vnc(self, display_number=None, extra_args='', timeout=20):
+    def start_vnc(self, display_number=None, extra_args="", timeout=20):
         """
         Starts VNC session
 
@@ -349,19 +351,22 @@ class SubNode(Node):
 
         # get display number and port number
         while proc.poll() is None:
-            line = str(proc.stdout.readline(), 'utf-8').strip()
+            line = str(proc.stdout.readline(), "utf-8").strip()
 
             if line is not None:
                 if self.debug:
                     logging.debug(f"start_vnc: {line}")
                 if "desktop" in line:
                     # match against the following pattern:
-                    #New 'n3000.hyak.local:1 (hansem7)' desktop at :1 on machine n3000.hyak.local
-                    #New 'n3000.hyak.local:6 (hansem7)' desktop is n3000.hyak.local:6
-                    pattern = re.compile("""
+                    # New 'n3000.hyak.local:1 (hansem7)' desktop at :1 on machine n3000.hyak.local
+                    # New 'n3000.hyak.local:6 (hansem7)' desktop is n3000.hyak.local:6
+                    pattern = re.compile(
+                        """
                             (New\s)
                             (\'([^:]+:(?P<display_number>[0-9]+))\s([^\s]+)\s)
-                            """, re.VERBOSE)
+                            """,
+                        re.VERBOSE,
+                    )
                     match = re.match(pattern, line)
                     assert match is not None
                     self.vnc_display_number = int(match.group("display_number"))
@@ -370,12 +375,12 @@ class SubNode(Node):
                         logging.debug(f"Obtained display number: {self.vnc_display_number}")
                         logging.debug(f"Obtained VNC port: {self.vnc_port}")
                     else:
-                        print('\x1b[1;32m' + "Success" + '\x1b[0m')
+                        print("\x1b[1;32m" + "Success" + "\x1b[0m")
                     return True
         if self.debug:
             logging.error("Failed to start vnc session (Timeout/?)")
         else:
-            print('\x1b[1;31m' + "Timed out" + '\x1b[0m')
+            print("\x1b[1;31m" + "Timed out" + "\x1b[0m")
         return False
 
     def list_vnc(self):
@@ -385,9 +390,9 @@ class SubNode(Node):
         active = list()
         stale = list()
         cmd = f"{self.get_sing_exec()} vncserver -list"
-        #TigerVNC server sessions:
+        # TigerVNC server sessions:
         #
-        #X DISPLAY #	PROCESS ID
+        # X DISPLAY #	PROCESS ID
         #:1		7280 (stale)
         #:12		29 (stale)
         #:2		83704 (stale)
@@ -405,9 +410,9 @@ class SubNode(Node):
                     stale.append(display_number)
                 else:
                     active.append(display_number)
-        return (active,stale)
+        return (active, stale)
 
-    def __remove_files__(self, filepaths:list):
+    def __remove_files__(self, filepaths: list):
         """
         Removes files on subnode and returns True on success and False otherwise.
 
@@ -421,7 +426,7 @@ class SubNode(Node):
         cmd = f"{cmd} &> /dev/null"
         if self.debug:
             logging.debug(f"Calling ssh {self.hostname} {cmd}")
-        return subprocess.call(['ssh', self.hostname, cmd]) == 0
+        return subprocess.call(["ssh", self.hostname, cmd]) == 0
 
     def __listdir__(self, dirpath):
         """
@@ -429,10 +434,13 @@ class SubNode(Node):
         """
         ret = list()
         cmd = f"test -d {dirpath} && ls -al {dirpath} | tail -n+4"
-        pattern = re.compile("""
+        pattern = re.compile(
+            """
             ([^\s]+\s+){8}
             (?P<name>.*)
-            """, re.VERBOSE)
+            """,
+            re.VERBOSE,
+        )
         proc = self.run_command(cmd)
         while proc.poll() is None:
             line = str(proc.stdout.readline(), "utf-8").strip()
@@ -447,7 +455,7 @@ class SubNode(Node):
         Kill specified VNC session with given display number or all VNC sessions.
         """
         if display_number is None:
-            active,stale = self.list_vnc()
+            active, stale = self.list_vnc()
             for entry in active:
                 if self.debug:
                     logging.debug(f"kill_vnc: active entry: {entry}")
@@ -485,10 +493,10 @@ class SubNode(Node):
             while proc.poll() is None:
                 line = str(proc.stdout.readline(), "utf-8").strip()
                 # Failed attempt:
-                #Can't kill '29': Operation not permitted
-                #Killing Xtigervnc process ID 29...
+                # Can't kill '29': Operation not permitted
+                # Killing Xtigervnc process ID 29...
                 # On successful attempt:
-                #Killing Xtigervnc process ID 29... success!
+                # Killing Xtigervnc process ID 29... success!
                 if self.debug:
                     logging.debug(f"kill_vnc: {line}")
                 if "success" in line:
@@ -507,6 +515,7 @@ class SubNode(Node):
             # Remove associated /tmp/.X11-unix/<display_number> socket
             socket_file = f"/tmp/.X11-unix/{display_number}"
             self.__remove_files__([socket_file])
+
 
 class LoginNode(Node):
     """
@@ -527,7 +536,7 @@ class LoginNode(Node):
         command = f"squeue | grep {os.getlogin()} | grep {job_name}"
         proc = self.run_command(command)
         while True:
-            line = str(proc.stdout.readline(), 'utf-8')
+            line = str(proc.stdout.readline(), "utf-8")
             if self.debug:
                 logging.debug(f"find_nodes: {line}")
             if not line:
@@ -541,13 +550,16 @@ class LoginNode(Node):
                 #            870400 compute-h      vnc  hansem7 PD       0:00      1 (Resources)
                 # or the following if a node failed to be acquired and needs to be killed
                 #            984669 compute-h      vnc  hansem7 PD       0:00      1 (QOSGrpCpuLimit)
-                pattern = re.compile("""
+                pattern = re.compile(
+                    """
                         (\s+)
                         (?P<job_id>[0-9]+)
                         (\s+[^ ]+){6}
                         (\s+)
                         (?P<subnode_name>[^\s]+)
-                        """, re.VERBOSE)
+                        """,
+                    re.VERBOSE,
+                )
                 match = pattern.match(line)
                 assert match is not None
                 name = match.group("subnode_name")
@@ -573,7 +585,7 @@ class LoginNode(Node):
                 elif self.debug:
                     msg = f"Found active subnode {name} with job ID {job_id}"
                     logging.debug(msg)
-                tmp = SubNode(name, job_id, '', '', self.debug)
+                tmp = SubNode(name, job_id, "", "", self.debug)
                 ret.add(tmp)
         return None
 
@@ -590,7 +602,7 @@ class LoginNode(Node):
         cmd = f"{self.get_sing_exec()} vncpasswd"
         self.call_command(cmd)
 
-    def call_command(self, command:str):
+    def call_command(self, command: str):
         """
         Call command (with arguments) on login node (to allow user interaction).
 
@@ -627,9 +639,21 @@ class LoginNode(Node):
         if isinstance(command, list):
             return subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         elif isinstance(command, str):
-            return subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            return subprocess.Popen(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
 
-    def reserve_node(self, res_time=3, timeout=10, cpus=8, gpus="0", mem="16G", partition="compute-hugemem", account="ece", job_name="vnc"):
+    def reserve_node(
+        self,
+        res_time=3,
+        timeout=10,
+        cpus=8,
+        gpus="0",
+        mem="16G",
+        partition="compute-hugemem",
+        account="ece",
+        job_name="vnc",
+    ):
         """
         Reserves a node and waits until the node has been acquired.
 
@@ -646,15 +670,24 @@ class LoginNode(Node):
 
         Returns SubNode object if it has been acquired successfully and None otherwise.
         """
-        cmd = ["timeout", str(timeout), "salloc",
-                "-J", job_name,
-                "--no-shell",
-                "-p", partition,
-                "-A", account,
-                "-t", f"{res_time}:00:00",
-                "--mem=" + mem,
-                "--gpus=" + gpus,
-                "-c", str(cpus)]
+        cmd = [
+            "timeout",
+            str(timeout),
+            "salloc",
+            "-J",
+            job_name,
+            "--no-shell",
+            "-p",
+            partition,
+            "-A",
+            account,
+            "-t",
+            f"{res_time}:00:00",
+            "--mem=" + mem,
+            "--gpus=" + gpus,
+            "-c",
+            str(cpus),
+        ]
         proc = self.run_command(cmd)
 
         alloc_stat = False
@@ -678,34 +711,42 @@ class LoginNode(Node):
         signal.signal(signal.SIGINT, __reserve_node_irq_handler__)
         signal.signal(signal.SIGTSTP, __reserve_node_irq_handler__)
 
-        print(f"Allocating node with {cpus} CPU(s), {gpus.split(':').pop()} GPU(s), and {mem} RAM for {res_time} hours...")
+        print(
+            f"Allocating node with {cpus} CPU(s), {gpus.split(':').pop()} GPU(s), and {mem} RAM for {res_time} hours..."
+        )
         while proc.poll() is None and not alloc_stat:
             print("...")
-            line = str(proc.stdout.readline(), 'utf-8').strip()
+            line = str(proc.stdout.readline(), "utf-8").strip()
             if self.debug:
                 msg = f"reserve_node: {line}"
                 logging.debug(msg)
             if "Pending" in line or "Granted" in line:
                 # match against pattern:
-                #salloc: Pending job allocation 864875
-                #salloc: Granted job allocation 864875
-                pattern = re.compile("""
+                # salloc: Pending job allocation 864875
+                # salloc: Granted job allocation 864875
+                pattern = re.compile(
+                    """
                         (salloc:\s)
                         ((Granted)|(Pending))
                         (\sjob\sallocation\s)
                         (?P<job_id>[0-9]+)
-                        """, re.VERBOSE)
+                        """,
+                    re.VERBOSE,
+                )
                 match = pattern.match(line)
                 if match is not None:
                     subnode_job_id = match.group("job_id")
             elif "are ready for job" in line:
                 # match against pattern:
-                #salloc: Nodes n3000 are ready for job
-                pattern = re.compile("""
+                # salloc: Nodes n3000 are ready for job
+                pattern = re.compile(
+                    """
                         (salloc:\sNodes\s)
                         (?P<node_name>[ngz][0-9]{4})
                         (\sare\sready\sfor\sjob)
-                        """, re.VERBOSE)
+                        """,
+                    re.VERBOSE,
+                )
                 match = pattern.match(line)
                 if match is not None:
                     subnode_name = match.group("node_name")
@@ -728,7 +769,9 @@ class LoginNode(Node):
                 tmp_nodes = self.find_nodes(job_name)
                 for tmp_node in tmp_nodes:
                     if self.debug:
-                        logging.debug(f"reserve_node: fallback: Checking {tmp_node.name} with Job ID {tmp_node.job_id}")
+                        logging.debug(
+                            f"reserve_node: fallback: Checking {tmp_node.name} with Job ID {tmp_node.job_id}"
+                        )
                     if tmp_node.job_id == subnode_job_id:
                         if self.debug:
                             logging.debug(f"reserve_node: fallback: Match found")
@@ -749,7 +792,7 @@ class LoginNode(Node):
         self.subnode = SubNode(subnode_name, subnode_job_id, self.sing_container, self.xstartup)
         return self.subnode
 
-    def cancel_job(self, job_id:int):
+    def cancel_job(self, job_id: int):
         """
         Cancel specified job ID
 
@@ -761,9 +804,9 @@ class LoginNode(Node):
         if self.debug:
             logging.debug(msg)
         proc = self.run_command(["scancel", str(job_id)])
-        print(str(proc.communicate()[0], 'utf-8'))
+        print(str(proc.communicate()[0], "utf-8"))
 
-    def check_port(self, port:int):
+    def check_port(self, port: int):
         """
         Returns True if port is unused and False if used.
         """
@@ -772,7 +815,7 @@ class LoginNode(Node):
         cmd = f"netstat -ant | grep LISTEN | grep {port}"
         proc = self.run_command(cmd)
         while proc.poll() is None:
-            line = str(proc.stdout.readline(), 'utf-8').strip()
+            line = str(proc.stdout.readline(), "utf-8").strip()
             if self.debug:
                 logging.debug(f"netstat line: {line}")
             if str(port) in line:
@@ -784,13 +827,13 @@ class LoginNode(Node):
         Returns unused port number if found and None if not found.
         """
         # 300 is arbitrary limit
-        for i in range(0,300):
+        for i in range(0, 300):
             port = BASE_VNC_PORT + i
             if self.check_port(port):
                 return port
         return None
 
-    def create_port_forward(self, login_port:int, subnode_port:int):
+    def create_port_forward(self, login_port: int, subnode_port: int):
         """
         Port forward between login node and subnode
 
@@ -827,13 +870,13 @@ class LoginNode(Node):
                     msg = f"Successfully created port forward"
                     logging.info(msg)
                 else:
-                    print('\x1b[1;32m' + "Success" + '\x1b[0m')
+                    print("\x1b[1;32m" + "Success" + "\x1b[0m")
                 return True
         if self.debug:
             msg = f"Error: Failed to create port forward"
             logging.error(msg)
         else:
-            print('\x1b[1;31m' + "Failed" + '\x1b[0m')
+            print("\x1b[1;31m" + "Failed" + "\x1b[0m")
         return False
 
     def get_port_forwards(self, nodes=None):
@@ -865,23 +908,26 @@ class LoginNode(Node):
                     cmd = f"ps x | grep ssh | grep {node.name}"
                     proc = self.run_command(cmd)
                     while proc.poll() is None:
-                        line = str(proc.stdout.readline(), 'utf-8').strip()
+                        line = str(proc.stdout.readline(), "utf-8").strip()
                         if cmd not in line:
                             # Match against pattern:
-                            #1974577 ?        Ss     0:20 ssh -N -f -L 5902:127.0.0.1:5902 n3065.hyak.local
-                            pattern = re.compile("""
+                            # 1974577 ?        Ss     0:20 ssh -N -f -L 5902:127.0.0.1:5902 n3065.hyak.local
+                            pattern = re.compile(
+                                """
                                     ([^\s]+(\s)+){4}
                                     (ssh\s-N\s-f\s-L\s(?P<ln_port>[0-9]+):127.0.0.1:(?P<sn_port>[0-9]+))
-                                    """, re.VERBOSE)
+                                    """,
+                                re.VERBOSE,
+                            )
                             match = re.match(pattern, line)
                             if match is not None:
                                 ln_port = int(match.group("ln_port"))
                                 sn_port = int(match.group("sn_port"))
-                                port_map.update({sn_port:ln_port})
-                    node_port_map.update({node.name:port_map})
+                                port_map.update({sn_port: ln_port})
+                    node_port_map.update({node.name: port_map})
         return node_port_map
 
-    def get_job_port_forward(self, job_id:int, node_name:str, node_port_map:dict):
+    def get_job_port_forward(self, job_id: int, node_name: str, node_port_map: dict):
         """
         Returns tuple containing LoginNodePort and SubNodePort for given job ID
         and node_name. Returns None on failure.
@@ -889,11 +935,13 @@ class LoginNode(Node):
         if self.get_time_left(job_id) is not None:
             port_map = node_port_map[node_name]
             if port_map is not None:
-                subnode = SubNode(node_name, job_id, self.sing_container, '', self.debug)
+                subnode = SubNode(node_name, job_id, self.sing_container, "", self.debug)
                 for vnc_port in port_map.keys():
                     display_number = vnc_port - BASE_VNC_PORT
                     if self.debug:
-                        logging.debug(f"get_job_port_forward: Checking job {job_id} vnc_port {vnc_port}")
+                        logging.debug(
+                            f"get_job_port_forward: Checking job {job_id} vnc_port {vnc_port}"
+                        )
                     # get PID from VNC pid file
                     pid = subnode.get_vnc_pid(subnode.name, display_number)
                     if pid is None:
@@ -902,11 +950,13 @@ class LoginNode(Node):
                     # if PID is active, then we have a hit for a specific job
                     if pid is not None and subnode.check_pid(pid):
                         if self.debug:
-                            logging.debug(f"get_job_port_forward: {job_id} has vnc_port {vnc_port} and login node port {port_map[vnc_port]}")
-                        return (vnc_port,port_map[vnc_port])
+                            logging.debug(
+                                f"get_job_port_forward: {job_id} has vnc_port {vnc_port} and login node port {port_map[vnc_port]}"
+                            )
+                        return (vnc_port, port_map[vnc_port])
         return None
 
-    def get_time_left(self, job_id:int, job_name="vnc"):
+    def get_time_left(self, job_id: int, job_name="vnc"):
         """
         Returns the time remaining for given job ID or None if the job is not
         present.
@@ -914,8 +964,8 @@ class LoginNode(Node):
         cmd = f'squeue -o "%L %.18i %.8j %.8u %R" | grep {os.getlogin()} | grep {job_name} | grep {job_id}'
         proc = self.run_command(cmd)
         if proc.poll() is None:
-            line = str(proc.stdout.readline(), 'utf-8')
-            return line.split(' ', 1)[0]
+            line = str(proc.stdout.readline(), "utf-8")
+            return line.split(" ", 1)[0]
         return None
 
     def print_props(self):
@@ -932,7 +982,7 @@ class LoginNode(Node):
             if item == "subnode" and props[item] is not None:
                 props[item].print_props()
 
-    def print_status(self, job_name:str, node_set=None, node_port_map=None):
+    def print_status(self, job_name: str, node_set=None, node_port_map=None):
         """
         Print details of each active VNC job in node_set. VNC port and display
         number should be in node_port_map.
@@ -971,33 +1021,43 @@ class LoginNode(Node):
                 if node_port_map and node_port_map[node.name]:
                     print(f"{node.name} with job ID {node.job_id} already has valid port forward")
                 else:
-                    subnode = SubNode(node.name, node.job_id, self.sing_container, self.xstartup, self.debug)
+                    subnode = SubNode(
+                        node.name, node.job_id, self.sing_container, self.xstartup, self.debug
+                    )
                     subnode_pids = subnode.list_pids()
                     # search for vnc process
                     proc = subnode.run_command("ps x | grep vnc")
                     while proc.poll() is None:
-                        line = str(proc.stdout.readline(), 'utf-8').strip()
-                        pid = int(line.split(' ', 1)[0])
+                        line = str(proc.stdout.readline(), "utf-8").strip()
+                        pid = int(line.split(" ", 1)[0])
                         # match found
                         if pid in subnode_pids:
                             if self.debug:
-                                logging.debug(f"repair_ln_sn_port_forwards: VNC PID {pid} found for job ID {node.job_id}")
-                            pattern = re.compile("""
+                                logging.debug(
+                                    f"repair_ln_sn_port_forwards: VNC PID {pid} found for job ID {node.job_id}"
+                                )
+                            pattern = re.compile(
+                                """
                                     (vnc\s+:)
                                     (?P<display_number>\d+)
-                                    """, re.VERBOSE)
+                                    """,
+                                re.VERBOSE,
+                            )
                             match = re.search(pattern, line)
                             assert match is not None
                             vnc_port = BASE_VNC_PORT + int(match.group("display_number"))
                             u2h_port = self.get_port()
                             if self.debug:
-                                logging.debug(f"repair_ln_sn_port_forwards: LoginNode({u2h_port})<->JobID({vnc_port})")
+                                logging.debug(
+                                    f"repair_ln_sn_port_forwards: LoginNode({u2h_port})<->JobID({vnc_port})"
+                                )
                             if u2h_port is None:
                                 print(f"Error: cannot find available/unused port")
                                 continue
                             else:
                                 self.subnode = subnode
                                 self.create_port_forward(u2h_port, vnc_port)
+
 
 def check_auth_keys():
     """
@@ -1011,120 +1071,157 @@ def check_auth_keys():
             return True
     return False
 
+
 def create_parser():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='command')
+    subparsers = parser.add_subparsers(dest="command")
 
     # general arguments
-    parser.add_argument('-d', '--debug',
-                    dest='debug',
-                    action='store_true',
-                    help='Enable debug logging')
-    parser.add_argument('-v', '--version',
-                    dest='print_version',
-                    action='store_true',
-                    help='Print program version and exit')
-    parser.add_argument('-J',
-                    dest='job_name',
-                    metavar='<job_name>',
-                    help='Slurm job name',
-                    default='hyakvnc',
-                    type=str)
+    parser.add_argument(
+        "-d", "--debug", dest="debug", action="store_true", help="Enable debug logging"
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        dest="print_version",
+        action="store_true",
+        help="Print program version and exit",
+    )
+    parser.add_argument(
+        "-J",
+        dest="job_name",
+        metavar="<job_name>",
+        help="Slurm job name",
+        default="hyakvnc",
+        type=str,
+    )
 
     # create command
-    parser_create = subparsers.add_parser('create',
-                    help='Create VNC session')
-    parser_create.add_argument('-p', '--partition',
-                    dest='partition',
-                    metavar='<partition>',
-                    help='Slurm partition',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('-A', '--account',
-                    dest='account',
-                    metavar='<account>',
-                    help='Slurm account',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('--timeout',
-                    dest='timeout',
-                    metavar='<time_in_seconds>',
-                    help='[default: 120] Slurm node allocation and VNC startup timeout length (in seconds)',
-                    default=120,
-                    type=int)
-    parser_create.add_argument('--port',
-                    dest='u2h_port',
-                    metavar='<port_to_hyak>',
-                    help='User<->Hyak Port override',
-                    type=int)
-    parser_create.add_argument('-t', '--time',
-                    dest='time',
-                    metavar='<time_in_hours>',
-                    help='Subnode reservation time (in hours)',
-                    required=True,
-                    type=int)
-    parser_create.add_argument('-c', '--cpus',
-                    dest='cpus',
-                    metavar='<num_cpus>',
-                    help='Subnode cpu count',
-                    required=True,
-                    type=int)
-    parser_create.add_argument('-G', '--gpus',
-                    dest='gpus',
-                    metavar='[type:]<num_gpus>',
-                    help='Subnode gpu count',
-                    default='0',
-                    type=str)
-    parser_create.add_argument('--mem',
-                    dest='mem',
-                    metavar='<NUM[K|M|G|T]>',
-                    help='Subnode memory amount with units',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('--container',
-                    dest='sing_container',
-                    metavar='<path_to_container.sif>',
-                    help='Path to VNC Apptainer/Singularity Container (.sif)',
-                    required=True,
-                    type=str)
-    parser_create.add_argument('--xstartup',
-                    dest='xstartup',
-                    metavar='<path_to_xstartup>',
-                    help='Path to xstartup script',
-                    required=True,
-                    type=str)
+    parser_create = subparsers.add_parser("create", help="Create VNC session")
+    parser_create.add_argument(
+        "-p",
+        "--partition",
+        dest="partition",
+        metavar="<partition>",
+        help="Slurm partition",
+        required=True,
+        type=str,
+    )
+    parser_create.add_argument(
+        "-A",
+        "--account",
+        dest="account",
+        metavar="<account>",
+        help="Slurm account",
+        required=True,
+        type=str,
+    )
+    parser_create.add_argument(
+        "--timeout",
+        dest="timeout",
+        metavar="<time_in_seconds>",
+        help="[default: 120] Slurm node allocation and VNC startup timeout length (in seconds)",
+        default=120,
+        type=int,
+    )
+    parser_create.add_argument(
+        "--port",
+        dest="u2h_port",
+        metavar="<port_to_hyak>",
+        help="User<->Hyak Port override",
+        type=int,
+    )
+    parser_create.add_argument(
+        "-t",
+        "--time",
+        dest="time",
+        metavar="<time_in_hours>",
+        help="Subnode reservation time (in hours)",
+        required=True,
+        type=int,
+    )
+    parser_create.add_argument(
+        "-c",
+        "--cpus",
+        dest="cpus",
+        metavar="<num_cpus>",
+        help="Subnode cpu count",
+        required=True,
+        type=int,
+    )
+    parser_create.add_argument(
+        "-G",
+        "--gpus",
+        dest="gpus",
+        metavar="[type:]<num_gpus>",
+        help="Subnode gpu count",
+        default="0",
+        type=str,
+    )
+    parser_create.add_argument(
+        "--mem",
+        dest="mem",
+        metavar="<NUM[K|M|G|T]>",
+        help="Subnode memory amount with units",
+        required=True,
+        type=str,
+    )
+    parser_create.add_argument(
+        "--container",
+        dest="sing_container",
+        metavar="<path_to_container.sif>",
+        help="Path to VNC Apptainer/Singularity Container (.sif)",
+        required=True,
+        type=str,
+    )
+    parser_create.add_argument(
+        "--xstartup",
+        dest="xstartup",
+        metavar="<path_to_xstartup>",
+        help="Path to xstartup script",
+        required=True,
+        type=str,
+    )
 
     # status command
-    parser_status = subparsers.add_parser('status',
-                    help='Print details of all VNC jobs with given job name and exit')
+    parser_status = subparsers.add_parser(
+        "status", help="Print details of all VNC jobs with given job name and exit"
+    )
 
     # kill command
-    parser_kill = subparsers.add_parser('kill',
-                    help='Kill specified job')
-    parser_kill.add_argument('job_id',
-                    metavar='<job_id>',
-                    help='Kill specified VNC session, cancel its VNC job, and exit',
-                    type=int)
+    parser_kill = subparsers.add_parser("kill", help="Kill specified job")
+    parser_kill.add_argument(
+        "job_id",
+        metavar="<job_id>",
+        help="Kill specified VNC session, cancel its VNC job, and exit",
+        type=int,
+    )
 
     # kill-all command
-    parser_kill_all = subparsers.add_parser('kill-all',
-                    help='Cancel all VNC jobs with given job name and exit')
+    parser_kill_all = subparsers.add_parser(
+        "kill-all", help="Cancel all VNC jobs with given job name and exit"
+    )
 
     # set-passwd command
-    parser_set_passwd = subparsers.add_parser('set-passwd',
-                    help='Prompts for new VNC password and exit')
-    parser_set_passwd.add_argument('--container',
-                    dest='sing_container',
-                    metavar='<path_to_container.sif>',
-                    help='Path to VNC Apptainer Container (.sif)',
-                    required=True,
-                    type=str)
+    parser_set_passwd = subparsers.add_parser(
+        "set-passwd", help="Prompts for new VNC password and exit"
+    )
+    parser_set_passwd.add_argument(
+        "--container",
+        dest="sing_container",
+        metavar="<path_to_container.sif>",
+        help="Path to VNC Apptainer Container (.sif)",
+        required=True,
+        type=str,
+    )
 
     # repair command
-    parser_repair = subparsers.add_parser('repair',
-                    help='Repair all missing/broken LoginNode<->SubNode port forwards, and then exit')
+    parser_repair = subparsers.add_parser(
+        "repair", help="Repair all missing/broken LoginNode<->SubNode port forwards, and then exit"
+    )
 
     return parser
+
 
 def main():
     parser = create_parser()
@@ -1223,8 +1320,7 @@ def main():
         if args.debug:
             logging.error(msg)
 
-
-    if args.command == 'create':
+    if args.command == "create":
         assert os.path.exists(args.sing_container)
         assert os.path.exists(args.xstartup)
 
@@ -1232,7 +1328,7 @@ def main():
         hyak = LoginNode(hostname, args.sing_container, args.xstartup, args.debug)
 
         # check memory format
-        assert(re.match("[0-9]+[KMGT]", args.mem))
+        assert re.match("[0-9]+[KMGT]", args.mem)
 
         # set VNC password at user's request or if missing
         if not hyak.check_vnc_password():
@@ -1242,7 +1338,16 @@ def main():
             hyak.set_vnc_password()
 
         # reserve node
-        subnode = hyak.reserve_node(args.time, args.timeout, args.cpus, args.gpus, args.mem, args.partition, args.account, args.job_name)
+        subnode = hyak.reserve_node(
+            args.time,
+            args.timeout,
+            args.cpus,
+            args.gpus,
+            args.mem,
+            args.partition,
+            args.account,
+            args.job_name,
+        )
         if subnode is None:
             exit(1)
 
@@ -1266,11 +1371,11 @@ def main():
         signal.signal(signal.SIGINT, __irq_handler__)
         signal.signal(signal.SIGTSTP, __irq_handler__)
 
-        gpu_count = int(args.gpus.split(':').pop())
-        sing_exec_args = ''
+        gpu_count = int(args.gpus.split(":").pop())
+        sing_exec_args = ""
         if gpu_count > 0:
             # Use `--nv` apptainer argument to bind CUDA driver and library
-            sing_exec_args = '--nv'
+            sing_exec_args = "--nv"
 
         # start vnc
         if not subnode.start_vnc(extra_args=sing_exec_args, timeout=args.timeout):
@@ -1309,11 +1414,11 @@ def main():
             logging.debug(msg)
         print(f"then connect to VNC session at localhost:{hyak.u2h_port}")
         print("=====================")
-    elif args.command == 'set-passwd':
+    elif args.command == "set-passwd":
         assert os.path.exists(args.sing_container)
 
         # create login node object
-        hyak = LoginNode(hostname, args.sing_container, '', args.debug)
+        hyak = LoginNode(hostname, args.sing_container, "", args.debug)
 
         if args.debug:
             logging.info("Setting new VNC password...")
@@ -1321,7 +1426,7 @@ def main():
         hyak.set_vnc_password()
     elif args.command is not None:
         # create login node object
-        hyak = LoginNode(hostname, '', '', args.debug)
+        hyak = LoginNode(hostname, "", "", args.debug)
 
         # check for existing subnodes with same job name
         node_set = hyak.find_nodes(args.job_name)
@@ -1329,12 +1434,12 @@ def main():
         # get port forwards (and display numbers)
         node_port_map = hyak.get_port_forwards(node_set)
 
-        if args.command == 'repair':
+        if args.command == "repair":
             # repair broken port forwards
             hyak.repair_ln_sn_port_forwards(node_set, node_port_map)
-        elif args.command == 'status':
+        elif args.command == "status":
             hyak.print_status(args.job_name, node_set, node_port_map)
-        elif args.command == 'kill':
+        elif args.command == "kill":
             # kill single VNC job with same job name
             msg = f"Attempting to kill {args.job_id}"
             print(msg)
@@ -1348,7 +1453,9 @@ def main():
                             logging.info("Found kill target")
                             logging.info(f"\tVNC display number: {node.vnc_display_number}")
                         # kill vnc session
-                        port_forward = hyak.get_job_port_forward(node.job_id, node.name, node_port_map)
+                        port_forward = hyak.get_job_port_forward(
+                            node.job_id, node.name, node_port_map
+                        )
                         if port_forward:
                             node.kill_vnc(port_forward[0] - BASE_VNC_PORT)
                         # cancel job
@@ -1359,7 +1466,7 @@ def main():
             if args.debug:
                 logging.error(msg)
             exit(1)
-        elif args.command == 'kill-all':
+        elif args.command == "kill-all":
             # kill all VNC jobs with same job name
             msg = f"Killing all VNC sessions with job name {args.job_name}..."
             print(msg)
@@ -1372,6 +1479,7 @@ def main():
                     # cancel job
                     hyak.cancel_job(node.job_id)
     exit(0)
+
 
 if __name__ == "__main__":
     main()
