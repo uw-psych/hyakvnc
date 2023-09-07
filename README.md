@@ -23,25 +23,38 @@ Before running `hyakvnc`, you'll need the following:
     - Install additional tools and libraries to the container as required by
       programs running within the VNC session.
 - xstartup script used to launch a desktop environment
+- A Python interpreter (version **3.9** or higher)
 
 ### Building
 
-Update pip:
+`hyakvnc` is a Python package that can be installed with `pip`. The minimum Python version required is **3.9**. You can check the version of the default Python 3 interpreter with:
+
 ```bash
-python3 -m pip install --upgrade --user pip
+python3 -V
+```
+As of 2021-09-30, the default Python 3 interpreter on Klone is version 3.6.8. Because `hyakvnc` requires version 3.9 or higher, it is necessary to specify the path to a Python 3.9 or newer interpreter when installing `hyakvnc`. You can list the Python 3 interpreters you have available with:
+
+```bash
+compgen -c | grep '^python3\.[[:digit:]]$'
+```
+
+At this time, `klone` supports Python 3.9, which can be run with the command `python3.9`. The following instructions are written with `python3.9` in mind. If you use another version, such as `python3.11`, you will need to substitute `python3.9` with, e.g., `python3.11` in the instructions.
+
+```bash
+python3.9 -m pip install --upgrade --user pip
 ```
 
 Build and install the package:
 
 ```bash
-python3 -m pip install --user git+https://github.com/uw-psych/hyakvnc
+python3.9 -m pip install --user git+https://github.com/uw-psych/hyakvnc
 ```
 
 Or, clone the repo and install the package locally:
 
 ```bash
 git clone https://github.com/uw-psych/hyakvnc
-python3 -m pip install --user .
+python3.9 -m pip install --user .
 ```
 
 If successful, then `hyakvnc` should be installed to `~/.local/bin/`.
@@ -51,10 +64,11 @@ If successful, then `hyakvnc` should be installed to `~/.local/bin/`.
 The optional dependency group`[dev]` in  `pyroject.toml` includes dependencies useful for development, including [pre-commit](https://pre-commit.com/) hooks that run in order to commit to the `git` repository.
 These apply various checks, including running the `black` code formatter before the commit takes place.
 
-To ensure `pre-commit` is installed, run:
+To ensure `pre-commit` and other development packages are installed, run:
+
 ```bash
-pip install '.[precommit]'
-``
+python3.9 -m pip install --user '.[dev]'
+```
 
 ### General usage
 
