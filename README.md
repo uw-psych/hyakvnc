@@ -13,7 +13,7 @@ Before running `hyakvnc`, you'll need the following:
 - A VNC client/viewer ([TurboVNC viewer](https://www.turbovnc.org) is recommended for all platforms)
 - HYAK Klone access with compute resources
 - A private SSH key on your local machine which has been added to the authorized keys on the login node of the HYAK Klone cluster (see below)
-- A HyakVNC-compatible Apptainer container image in a directory on Hyak (usually with the file extension `.sif`) or the URL to one (e.g,., `oras://ghcr.io/maouw/ubuntu22.04_turbovnc:latest`)
+- A HyakVNC-compatible Apptainer container image in a directory on Hyak (usually with the file extension `.sif`) or the URL to one (e.g,., `oras://ghcr.io/maouw/hyakvnc_apptainer/ubuntu22.04_turbovnc:latest`)
 
 Follow the instructions below to set up your machine correctly:
 
@@ -78,7 +78,7 @@ ssh your-uw-netid@klone.hyak.uw.edu
 After you've connected to the login node, you can download and install `hyakvnc` by running the following command. Copy and paste it into the terminal window where you are connected to the login node and press enter:
 
 ```bash
-curl -o ~/.local/bin/hyakvnc --create-dirs -fsSL https://raw.githubusercontent.com/uw-psych/hyakvnc/main/hyakvnc && chmod +x ~/.local/bin/hyakvnc && [[ ":${PATH}:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH" && [-n "${ZSH_VERSION:-}" ] && rehash
+curl -o ~/.local/bin/hyakvnc --create-dirs -fsSL https://raw.githubusercontent.com/maouw/hyakvnc/main/hyakvnc && chmod +x ~/.local/bin/hyakvnc && [[ ":${PATH}:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH" && [-n "${ZSH_VERSION:-}" ] && rehash
 ```
 
 This will download and install `hyakvnc` to your `~/.local/bin` directory and add it to your `$PATH` so you can run it by typing `hyakvnc` into the terminal window.
@@ -88,7 +88,7 @@ This will download and install `hyakvnc` to your `~/.local/bin` directory and ad
 In a terminal window connected to a login node, enter this command to clone the repository and navigate into the repository directory:
 
 ```bash
-git clone https://github.com/uw-psych/hyakvnc && cd hyakvnc
+git clone https://github.com/maouw/hyakvnc && cd hyakvnc
 ```
 
 Then, run the following command to install `hyakvnc`:

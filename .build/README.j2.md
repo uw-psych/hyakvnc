@@ -13,7 +13,7 @@ Before running `hyakvnc`, you'll need the following:
 - A VNC client/viewer ([TurboVNC viewer](https://www.turbovnc.org) is recommended for all platforms)
 - HYAK Klone access with compute resources
 - A private SSH key on your local machine which has been added to the authorized keys on the login node of the HYAK Klone cluster (see below)
-- A HyakVNC-compatible Apptainer container image in a directory on Hyak (usually with the file extension `.sif`) or the URL to one (e.g,., `oras://ghcr.io/maouw/ubuntu22.04_turbovnc:latest`)
+- A HyakVNC-compatible Apptainer container image in a directory on Hyak (usually with the file extension `.sif`) or the URL to one (e.g,., `oras://ghcr.io/maouw/hyakvnc_apptainer/ubuntu22.04_turbovnc:latest`)
 
 Follow the instructions below to set up your machine correctly:
 
