@@ -1,5 +1,5 @@
 # hyakvnc
-<!-- markdownlint-disable-file -->
+
 hyakvnc -- A tool for launching VNC sessions on Hyak.
 
 `hyakvnc` is a command-line tool that makes it easy to start a graphical [VNC](https://en.wikipedia.org/wiki/Virtual_Network_Computing) session on the University of Washington [Hyak](https://hyak.uw.edu/) cluster, allowing you to interact with the system in a point-and-click environment, with support for graphical applications such as [Freesurfer](https://surfer.nmr.mgh.harvard.edu/). `hyakvnc` sessions run in [Apptainer](https://apptainer.org) containers, which provide reproducible environments that can run anywhere and be shared with other researchers.
@@ -21,7 +21,7 @@ Follow the instructions below to set up your machine correctly:
 
 #### Linux
 
-If you are using Linux, OpenSSH is probably installed already -- if not, you can install it via `apt-get install openssh-client` on Debian/Ubuntu or `yum install openssh-clients` on RHEL/CentOS/Rocky/Fedora. To open a terminal window, search for "Terminal" in your desktop environment's application launcher. 
+If you are using Linux, OpenSSH is probably installed already -- if not, you can install it via `apt-get install openssh-client` on Debian/Ubuntu or `yum install openssh-clients` on RHEL/CentOS/Rocky/Fedora. To open a terminal window, search for "Terminal" in your desktop environment's application launcher.
 
 To install TurboVNC, download the latest version from [here](https://sourceforge.net/projects/turbovnc/files). On Debian/Ubuntu, you will need to download the file ending with `arm64.deb`. On RHEL/CentOS/Rocky/Fedora, you will need to download the file ending with `x86_64.rpm`. Then, install it by running `sudo dpkg -i <filename>` on Debian/Ubuntu or `sudo rpm -i <filename>` on RHEL/CentOS/Rocky/Fedora.
 

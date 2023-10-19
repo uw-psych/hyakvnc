@@ -12,8 +12,7 @@ DATETIME_FORMAT := %(%Y-%m-%d %H:%M:%S)T
 has_jinja := $(shell command -v jinja 2> /dev/null)
 
 REMOTE_NAME ?= origin
-#var_branch := $(shell git rev-parse --abbrev-ref HEAD)
-var_branch := main
+var_branch ?= main
 var_repo_url := $(shell git config --get remote.$(REMOTE_NAME).url | sed -E 's/\.git$$//')
 var_repo_name :=   $(shell git config --get remote.$(REMOTE_NAME).url | sed -E 's/\.git$$//; s/^.*github\.com\///')
 var_raw_script_url := $(shell echo $(var_repo_url) | sed -E 's/github\.com/raw.githubusercontent.com/; s/\/tree\/.*//')/$(var_branch)/hyakvnc
@@ -26,11 +25,11 @@ config.inc.md: ../hyakvnc
 usage.inc.md: ../hyakvnc ## Generate usage documentatoin from `hyakvnc help` output
 	$(shell for x in create status show stop config install; do ../hyakvnc help "$$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$$/```text/' | pr -e4 -t && echo '```'; done > $@)
 	
-../README.md: README.j2.md usage.inc.md config.inc.md
+../README.md: README.j2.md usage.inc.md config.inc.md Makefile
 ifndef has_jinja
 	$(error "jinja is not available. Please install jinja-cli with `pip install jinja-cli`")
 endif
-	jinja -D repo_url $(var_repo_url) -D repo_name $(var_repo_name) -D container_registry $(var_container_registry) -D raw_script_url $(var_raw_script_url) -D hyakvnc_apptainer_repo $(var_hyakvnc_apptainer_repo) $< > $@
+	jinja -D repo_url $(var_repo_url) -D repo_name $(var_repo_name) -D container_registry $(var_container_registry) -D raw_script_url $(var_raw_script_url) -D hyakvnc_apptainer_repo $(var_hyakvnc_apptainer_repo) $< | sed 's/^.*<!-- markdownlint-disable-file -->.*$$//g' > $@
 
 .PHONY: README
 README: ../README.md
