@@ -78,7 +78,7 @@ ssh your-uw-netid@klone.hyak.uw.edu
 After you've connected to the login node, you can download and install `hyakvnc` by running the following command. Copy and paste it into the terminal window where you are connected to the login node and press enter:
 
 ```bash
-curl -o ~/.local/bin/hyakvnc --create-dirs -fsSL https://raw.githubusercontent.com/maouw/hyakvnc/main/hyakvnc && chmod +x ~/.local/bin/hyakvnc && [[ ":${PATH}:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH" && [-n "${ZSH_VERSION:-}" ] && rehash
+curl -o ~/.local/bin/hyakvnc --create-dirs -fsSL https://raw.githubusercontent.com/maouw/hyakvnc/mkreadme-gha/hyakvnc && chmod +x ~/.local/bin/hyakvnc && [[ ":${PATH}:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH" && [-n "${ZSH_VERSION:-}" ] && rehash
 ```
 
 This will download and install `hyakvnc` to your `~/.local/bin` directory and add it to your `$PATH` so you can run it by typing `hyakvnc` into the terminal window.
@@ -245,7 +245,7 @@ Examples:
 Usage: hyakvnc config [config options...]
     
 Description:
-    Show the current configuration for hyakvnc, as set in the user configuration file at /home/altan/.hyakvnc/hyakvnc-config.env, in the current environment, or the default values set by hyakvnc.
+    Show the current configuration for hyakvnc, as set in the user configuration file at /home/runner/.hyakvnc/hyakvnc-config.env, in the current environment, or the default values set by hyakvnc.
 
 Options:
     -h, --help      Show this help message and exit
@@ -291,6 +291,7 @@ When you set an environment variable, it is advisable to surround the value with
 The following variables are available:
 
 - HYAKVNC_DIR: Local directory to store application data (default: `$HOME/.hyakvnc`)
+- HYAKVNC_CHECK_UPDATE_FREQUENCY: How often to check for updates in `[d]`ays or `[m]`inutes (default: `0` for every time. Use `1d` for daily, `10m` for every 10 minutes, etc. `-1` to disable.)
 - HYAKVNC_CONFIG_FILE: Configuration file to use (default: `$HYAKVNC_DIR/hyakvnc-config.env`)
 - HYAKVNC_LOG_FILE: Log file to use (default: `$HYAKVNC_DIR/hyakvnc.log`)
 - HYAKVNC_LOG_LEVEL: Log level to use for interactive output (default: `INFO`)
