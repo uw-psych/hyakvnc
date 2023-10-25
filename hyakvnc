@@ -184,14 +184,90 @@ function log {
 
 # ## Update functions:
 
+# hyakvnc_pull_updates()
+# Pull updates from the hyakvnc git repository
+# Arguments: None
+# Returns: 0 if successfuly updated, 1 if not or if an error occurred
+function hyakvnc_pull_updates() {
+	[[ -z "${HYAKVNC_REPO_DIR:-}" ]] && {
+		log DEBUG "HYAKVNC_REPO_DIR is not set. Can't pull updates."
+		return 1
+	}
+
+	log INFO "Updating hyakvnc..."
+	git -C "${HYAKVNC_REPO_DIR}" pull --quiet origin main || {
+		log DEBUG "Couldn't apply updatesd"
+		return 0
+	}
+
+	log INFO "Successfully updated hyakvnc."
+	return 0
+}
+
 # hyakvnc_check_updates()
 # Check if a hyakvnc update is available
 # Arguments: None
-
+# Returns: 0 if an update is available, 1 if none or if an error occurred
 function hyakvnc_check_updates {
+	log DEBUG "Checking for updates... "
+	# Check if git is installed:
+	command -v git >/dev/null 2>&1 || {
+		log WARN "git is not installed. Can't check for updates"
+		return 1
+	}
+
+	# Check if git is available and that the git directory is a valid git repository:
+	git -C "${HYAKVNC_REPO_DIR}" tag >/dev/null 2>&1 || {
+		log DEBUG "Configured git directory ${HYAKVNC_REPO_DIR} doesn't seem to be a valid git repository. Can't check for updates"
+		return 1
+	}
+
+	local cur_branch
+	cur_branch="$(git -C "${HYAKVNC_REPO_DIR}" branch --show-current 2>&1 || true)"
+	if [[ "${cur_branch:-}" != "main" ]]; then
+		log WARN "Current branch is ${cur_branch}. Please switch to the main branch to get updates. Skipping update check!"
+		return 1
+	fi
+
+	local cur_date
+	cur_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local main || echo ???)"
+	log INFO "The installed version was published ${cur_date}"
+
+	touch "${HYAKVNC_REPO_DIR}/.last_update_check"
+
+	# Get hash of local HEAD:
+	if [[ "$(git -C "${HYAKVNC_REPO_DIR}" rev-parse main || true)" == "$(git -C "${HYAKVNC_REPO_DIR}" ls-remote --heads --refs origin main | cut -f1 || true)" ]]; then
+		log INFO "hyakvnc is up to date."
+		return 1
+	fi
+
+	git -C "${HYAKVNC_REPO_DIR}" fetch --quiet origin main || {
+		log DEBUG "Failed to fetch from remote"
+		return 1
+	}
+
+	local nchanges
+	nchanges="$(git -C "${HYAKVNC_REPO_DIR}" rev-list HEAD...origin/main --count || echo 0)"
+	if [[ "${nchanges}" -gt 0 ]]; then
+		local new_date
+		new_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local origin/main || echo ???)"
+		log INFO "Found ${nchanges} updates. Most recent: ${new_date}"
+		return 0
+	fi
+	return 1
+}
+
+# hyakvnc_autoupdate()
+# Unless updates were checked recenetly per $HYAKVNC_CHECK_UPDATE_FREQUENCY,
+# 	check if a hyakvnc update is available. If running interactively, prompt
+#	to apply update (or disable prompt in the future). If not running interactively,
+#	apply the update.
+# Arguments: None
+# Returns: 0 if an update is available and the user wants to update, 1 if none or if an error occurred
+function hyakvnc_autoupdate {
 	if [[ "${HYAKVNC_CHECK_UPDATE_FREQUENCY:-0}" == "-1" ]]; then
 		log DEBUG "Skipping update check"
-		return 0
+		return 1
 	fi
 
 	if [[ "${HYAKVNC_CHECK_UPDATE_FREQUENCY:-0}" != "0" ]]; then
@@ -208,7 +284,7 @@ function hyakvnc_check_updates {
 			;;
 		*)
 			log ERROR "Invalid update frequency unit: ${update_frequency_unit}. Please use [d]ays or [m]inutes."
-			exit 1
+			return 1
 			;;
 		esac
 
@@ -216,70 +292,27 @@ function hyakvnc_check_updates {
 
 		if [[ -r "${HYAKVNC_REPO_DIR}/.last_update_check" ]] && [[ -z $(find "${HYAKVNC_REPO_DIR}/.last_update_check" -type f "${find_m_arg[@]}" -print || true) ]]; then
 			log DEBUG "Skipping update check because the last check was less than ${update_frequency_value}${update_frequency_unit} ago."
-			return 0
+			return 1
 		fi
 
 		log DEBUG "Checking for updates because the last check was more than ${update_frequency_value}${update_frequency_unit} ago."
 	fi
 
-	log DEBUG "Checking for updates... "
-	# Check if git is installed:
-	command -v git >/dev/null 2>&1 || {
-		log WARN "git is not installed. Can't check for updates"
-		return 0
+	hyakvnc_check_updates || {
+		log DEBUG "No updates found."
+		return 1
 	}
 
-	# Check if git is available and that the git directory is a valid git repository:
-	git -C "${HYAKVNC_REPO_DIR}" tag >/dev/null 2>&1 || {
-		log DEBUG "Configured git directory ${HYAKVNC_REPO_DIR} doesn't seem to be a valid git repository. Can't check for updates"
-		return 0
-	}
-
-	local cur_branch
-	cur_branch="$(git -C "${HYAKVNC_REPO_DIR}" branch --show-current 2>&1 || true)"
-	if [[ "${cur_branch:-}" != "main" ]]; then
-		log WARN "Current branch is ${cur_branch}. Please switch to the main branch to get updates. Skipping update check!"
-		return 0
-	fi
-
-	local cur_date
-	cur_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local main || echo ???)"
-	log INFO "The installed version was published ${cur_date}"
-
-	touch "${HYAKVNC_REPO_DIR}/.last_update_check"
-
-	# Get hash of local HEAD:
-	if [[ "$(git -C "${HYAKVNC_REPO_DIR}" rev-parse main || true)" == "$(git -C "${HYAKVNC_REPO_DIR}" ls-remote --heads --refs origin main | cut -f1 || true)" ]]; then
-		log INFO "hyakvnc is up to date."
-		return 0
-	fi
-
-	git -C "${HYAKVNC_REPO_DIR}" fetch --quiet origin main || {
-		log DEBUG "Failed to fetch from remote"
-		return 0
-	}
-
-	local nchanges
-	nchanges="$(git -C "${HYAKVNC_REPO_DIR}" rev-list HEAD...origin/main --count || echo 0)"
-	if [[ "${nchanges}" -gt 0 ]]; then
-		local new_date
-		new_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local origin/main || echo ???)"
-		log INFO "Found ${nchanges} updates. Most recent: ${new_date}"
-
-		[[ -t 0 ]] || {
-			log INFO "Not updating hyakvnc because it is not running interactively."
-			return 0
-		}
-
-		while true; do # Ask user if they want to update
+	if [[ -t 0 ]]; then # Check if we're running interactively
+		while true; do     # Ask user if they want to update
 			local choice
-			read -r -p "Would you like to update hyakvnc? [y/n] " choice
+			read -r -p "Would you like to update hyakvnc? [y/n] [x to disable]: " choice
 			case "${choice}" in
 			y | Y | yes | Yes)
 				log INFO "Updating hyakvnc..."
-				git -C "${HYAKVNC_REPO_DIR}" pull --quiet origin main || {
-					log DEBUG "Failed to pull from remote"
-					return 0
+				hyakvnc_pull_updates || {
+					log INFO "Didn't update hyakvnc"
+					return 1
 				}
 				log INFO "Successfully updated hyakvnc. Restarting..."
 				echo
@@ -287,14 +320,29 @@ function hyakvnc_check_updates {
 				;;
 			n | N | no | No)
 				log INFO "Not updating hyakvnc"
-				return 0
+				return 1
+				;;
+			x | X)
+				log INFO "Disabling update checks"
+				export HYAKVNC_CHECK_UPDATE_FREQUENCY="-1"
+				if [[ -n "${HYAKVNC_CONFIG_FILE:-}" ]]; then
+					touch "${HYAKVNC_CONFIG_FILE}" && echo 'HYAKVNC_CHECK_UPDATE_FREQUENCY=-1' >>"${HYAKVNC_CONFIG_FILE}"
+					log INFO "Set HYAKVNC_CHECK_UPDATE_FREQUENCY=-1 in ${HYAKVNC_CONFIG_FILE}"
+				fi
+				return 1
 				;;
 			*)
-				echo "Please enter y or n"
+				echo "Please enter y, n, or x"
 				;;
 			esac
 		done
+	else
+		hyakvnc_pull_updates || {
+			log INFO "Didn't update hyakvnc"
+			return 1
+		}
 	fi
+	return 0
 }
 
 # ## SLURM utility functons:
@@ -308,6 +356,7 @@ function check_slurm_installed {
 
 # expand_slurm_node_range()
 # Expand a SLURM node range to a list of nodes
+# Arguments: <node range>
 function expand_slurm_node_range {
 	[[ -z "${1:-}" ]] && return 1
 	result=$(scontrol show hostnames --oneliner "${1}" | grep -oE '^.+$' | tr ' ' '\n') || return 1
@@ -316,6 +365,7 @@ function expand_slurm_node_range {
 
 # get_slurm_job_info()
 # Get info about a SLURM job, given a list of job IDs
+# Arguments: <user> [<jobid>]
 function get_slurm_job_info {
 	[[ $# -eq 0 ]] && {
 		log ERROR "User or Job ID must be specified"
@@ -342,6 +392,7 @@ function get_slurm_job_info {
 
 # get_squeue_job_status()
 # Get the status of a SLURM job, given a job ID
+# Arguments: <jobid>
 function get_squeue_job_status {
 	local jobid="${1:-}"
 	[[ -z "${jobid}" ]] && {
@@ -356,6 +407,7 @@ function get_squeue_job_status {
 
 # get_slurm_hyak_qos()
 # Return the correct QOS on Hyak for the given partition on hyak
+# Arguments: <partition>
 function get_slurm_hyak_qos {
 	# Logic copied from hyakalloc's hyakqos.py:QosResource.__init__():
 	local qos_name qos_suffix
@@ -435,6 +487,7 @@ function hyakvnc_config_init {
 
 # stop_hyakvnc_session()
 # Stop a Hyak VNC session, given a job ID
+# Arguments: <jobid> [ -c | --cancel ] [ --no-rm ]
 function stop_hyakvnc_session {
 	local jobid should_cancel no_rm
 	while true; do
@@ -1446,6 +1499,34 @@ function cmd_install {
 	[[ "${myshell}" == "zsh" ]] && echo "Run 'rehash' to update your PATH"
 }
 
+# ## COMMAND: update
+
+# help_update()
+function help_update {
+	cat <<EOF
+Update hyakvnc
+
+Usage: hyakvnc update [update options...]
+	
+Description:
+	Update hyakvnc.
+
+Options:
+	-h, --help			Show this help message and exit
+
+Examples:
+	# Update hyakvnc
+	hyakvnc update
+EOF
+}
+
+# cmd_update()
+function cmd_update {
+	hyakvnc_check_updates || return 1
+	hyakvnc_pull_updates || return 1
+	return 0
+}
+
 # ## COMMAND: config
 
 # help_config()
@@ -1541,10 +1622,11 @@ EOF
 
 # main()
 function main {
-	local action
-	action="cmd_help"
-	[[ $# -eq 0 ]] && cmd_help && exit 0 # Show help if no arguments are provided
+	local action="cmd_help"
+	local orig_args=()
+	orig_args+=("${@:-}")
 
+	[[ $# -eq 0 ]] && cmd_help && exit 0 # Show help if no arguments are provided
 	while true; do
 		case "${1:-}" in
 		-d | --debug) # Debug mode
@@ -1573,13 +1655,15 @@ function main {
 		esac
 	done
 
-	if [[ "${action}" != "cmd_help" ]] && [[ "${action}" != "cmd_install" ]]; then
-		if [[ "${action}" != "cmd_config" ]]; then
-			hyakvnc_config_init || return 1 # Fill in default values for config variables or exit if config can't be initialized
-		else
-			hyakvnc_config_init || log WARN "Could't initialize config automatically" # Don't exit if config can't be initialized (e.g., not running on SLURM)
-		fi
-	fi
+	case "${action}" in
+	cmd_help | cmd_install | cmd_update | cmd_config)
+		hyakvnc_config_init || log WARN "Could't initialize config automatically" # Don't exit if config can't be initialized (e.g., not running on SLURM)
+		;;
+	*)
+		hyakvnc_config_init || exit 1                                        # Fill in default values for config variables or exit if config can't be initialized
+		hyakvnc_autoupdate "${orig_args:-}" || log TRACE "Didn't autoupdate" # Don't exit if didn't autoupdate
+		;;
+	esac
 	${action} "$@"
 }
 
