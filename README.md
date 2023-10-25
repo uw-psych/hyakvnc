@@ -257,6 +257,22 @@ Examples:
     hyakvnc config
 ```
 
+### Update hyakvnc
+
+```text
+Usage: hyakvnc update [update options...]
+    
+Description:
+    Update hyakvnc.
+
+Options:
+    -h, --help          Show this help message and exit
+
+Examples:
+    # Update hyakvnc
+    hyakvnc update
+```
+
 ### Install the hyakvnc command
 
 ```text
