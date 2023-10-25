@@ -100,7 +100,6 @@ Then, run the following command to install `hyakvnc`:
 ```
 
 If you prefer, you may continue to use `hyakvnc` from the directory where you cloned it by running `./hyakvnc` from that directory instead of using the command `hyakvnc`.
-started
 
 ## Getting started
 

@@ -368,6 +368,13 @@ function check_slurm_installed {
 	command -v squeue >/dev/null 2>&1 || return 1
 }
 
+# check_slurm_running {
+# Check if SLURM is running
+# Arguments: None
+function check_slurm_running {
+	sinfo >/dev/null 2>&1 || return 1
+}
+
 # expand_slurm_node_range()
 # Expand a SLURM node range to a list of nodes
 # Arguments: <node range>
@@ -1681,7 +1688,9 @@ function main {
 
 	case "${action}" in
 	cmd_help | cmd_install | cmd_update | cmd_config)
+	if check_slurm_running; then
 		hyakvnc_config_init || log WARN "Could't initialize config automatically" # Don't exit if config can't be initialized (e.g., not running on SLURM)
+	fi
 		;;
 	*)
 		hyakvnc_config_init || exit 1                                        # Fill in default values for config variables or exit if config can't be initialized
