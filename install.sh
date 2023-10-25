@@ -19,12 +19,14 @@ _add_hyakvnc_to_path() {
 			echo "Added hyakvnc to PATH in ${HOME:-}/.bashrc" 2>&1
 			export PATH="${_BIN_INSTALL_DIR}:${PATH:-}"
 		elif [ -n "${ZSH_VERSION:-}" ]; then
-			echo "export PATH=\"${_UNEXPANDED_BIN_INSTALL_DIR}:\$PATH\"" >>"${ZDOTDIR:-${HOME:-}}/.zshrc"
-			echo "Added hyakvnc to PATH in ${ZDOTDIR:-${HOME}}/.zshrc" 2>&1
-			export PATH="${_BIN_INSTALL_DIR}:${PATH}"
+			echo "export PATH=\"${_UNEXPANDED_BIN_INSTALL_DIR}:\$PATH\"" >>"${ZDOTDIR:-${HOME:-}}/.zshrc" && echo "Added hyakvnc to PATH in ${ZDOTDIR:-${HOME}}/.zshrc" 2>&1
+			export PATH="${_BIN_INSTALL_DIR}:${PATH:-}"
 			rehash 2>/dev/null || true
+		elif [ "${0:-}" = "dash" ] || [ "${0:-}" = "sh" ]; then
+			echo "export PATH=\"${_UNEXPANDED_BIN_INSTALL_DIR}:\$PATH\"" >>"${HOME}/.profile" && echo "Added hyakvnc to PATH in ${HOME}/.profile" 2>&1
+			export PATH="${_BIN_INSTALL_DIR}:${PATH:-}"
 		else
-			echo "Could not add hyakvnc to PATH. Please add ${_BIN_INSTALL_DIR} to your shell PATH manually." 2>&1
+			echo "Could not add hyakvnc to PATH." 2>&1
 			return 1
 		fi
 		;;
@@ -52,8 +54,13 @@ _install_hyakvnc() {
 		return 1
 }
 
-if _install_hyakvnc && _add_hyakvnc_to_path; then
+if _install_hyakvnc; then
 	echo "Successfully installed hyakvnc." 2>&1
+	if _add_hyakvnc_to_path; then
+		echo "Added hyakvnc to PATH." 2>&1
+	else
+		echo "Could not add hyakvnc to PATH." 2>&1
+	fi
 else
 	echo "Failed to install hyakvnc." 2>&1
 fi
