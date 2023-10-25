@@ -2,7 +2,7 @@
 
 # install.sh is generated from .build/install.j2.sh. Do not edit it directly.
 # This script is intended to be sourced from the current shell.
-# It will clone the hyakvnc repository to ~/.hyakvnc/hyakvnc and create a symlink in it to ~/.local/bin/hyakvnc.
+# It will clone the hyakvnc repository from GitHub to ~/.hyakvnc/hyakvnc and create a symlink in it to ~/.local/bin/hyakvnc.
 # These locations can be changed by setting the following environment variables:
 # - HYAKVNC_DIR: Local directory to store application data (default: `$HOME/.hyakvnc`)
 # - HYAKVNC_REPO_DIR: Local directory to store git repository (default: `$HYAKVNC_DIR/hyakvnc`)
