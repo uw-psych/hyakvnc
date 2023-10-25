@@ -26,7 +26,9 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push install.sh
         run: |
-          jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' -o install.sh .build/install.sh.j2
+          pushd .build/
+          jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' install.sh.j2 > ../install.sh
+          popd
           git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
           git config --local user.name ${{ github.event.sender.login }}
           git add install.sh
