@@ -8,39 +8,23 @@ jobs:
     name: Build README.md
     permissions: write-all
     steps:
-      - name: Install jinja-cli
-        run: |
-          python3 -m pip install jinja-cli
       - name: Check out code for the container build
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check if README.md has changed
-        id: readme-changed
+      - name: Update README.md if needed
+        id: update-readme
         run: |
           if git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- hyakvnc .build/README.j2.md .github/workflows/mkreadme.yml; then
-            gh run cancel ${{ github.run_id }}
-            gh run watch ${{ github.run_id }}
+            pushd .build/
+            sed -E '/^HYAKVNC_.*#\s*%%/!d; s/=.*(#\s*%%)/:/g; s/(^.)/- \1/g' ../hyakvnc > config.inc.md
+            for x in create status show stop config install; do ../hyakvnc help "$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$/```text/' | pr -e4 -t && echo '```'; done > usage.inc.md
+            jinja -D github_repository "${{ github.repository }}" -D github_ref_name "${{ github.ref_name }}" README.j2.md | sed 's/^.*<!-- markdownlint-disable-file -->.*$//g' > ../README.md
+            popd
+            git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
+            git config --local user.name ${{ github.event.sender.login }}
+            git add README.md
+            git commit -am "Update README.md"
+            git push
           fi
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Generate configuration descriptions
-        run: |
-          pushd .build/
-          sed -E '/^HYAKVNC_.*#\s*%%/!d; s/=.*(#\s*%%)/:/g; s/(^.)/- \1/g' ../hyakvnc > config.inc.md
-          popd
-      - name: Generate usage descriptions
-        run: |
-          pushd .build/
-          for x in create status show stop config install; do ../hyakvnc help "$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$/```text/' | pr -e4 -t && echo '```'; done > usage.inc.md
-          popd
-      - name: Create and push README.md
-        run: |
-          pushd .build/
-          jinja -D github_repository "${{ github.repository }}" -D github_ref_name "${{ github.ref_name }}" README.j2.md | sed 's/^.*<!-- markdownlint-disable-file -->.*$//g' > ../README.md
-          popd
-          git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
-          git config --local user.name ${{ github.event.sender.login }}
-          git add README.md
-          git commit -am "Update README.md"
-          git push
+

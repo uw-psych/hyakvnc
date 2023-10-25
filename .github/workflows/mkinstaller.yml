@@ -8,7 +8,12 @@ jobs:
     name: Build install.sh
     permissions: write-all
     steps:
-      - name: Template, create, and push install.sh
+      - name: Check out code for the container build
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update install.sh if needed
+        id: update-installer
         run: |
           if ! git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- .build/install.j2.sh .github/workflows/mkinstaller.yml; then
             python3 -m pip install jinja-cli
