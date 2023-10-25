@@ -202,7 +202,6 @@ function hyakvnc_pull_updates() {
 
 	[[ "${cur_branch}" != "main" ]] && {
 		log WARN "Current branch is ${cur_branch}, not main. Be warned that this branch may not be up to date."
-		return 1
 	}
 
 	log INFO "Updating hyakvnc..."
@@ -235,15 +234,16 @@ function hyakvnc_check_updates {
 
 	local cur_branch
 	cur_branch="$(git -C "${HYAKVNC_REPO_DIR}" branch --show-current 2>&1 || true)"
-	[[ -z "${cur_branch}" ]] && {
+		[[ -z "${cur_branch}" ]] && {
 		log ERROR "Couldn't determine current branch. Can't pull updates."
 		return 1
 	}
 
 	[[ "${cur_branch}" != "main" ]] && {
 		log WARN "Current branch is ${cur_branch}, not main. Be warned that this branch may not be up to date."
+		return 1
 	}
-
+	
 	local cur_date
 	cur_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local "${cur_branch}" || echo ???)"
 	log INFO "The installed version was published ${cur_date}"
@@ -326,7 +326,7 @@ function hyakvnc_autoupdate {
 			y | Y | yes | Yes)
 				log INFO "Updating hyakvnc..."
 				hyakvnc_pull_updates || {
-					log INFO "Didn't update hyakvnc"
+					log WARN "Didn't update hyakvnc"
 					return 1
 				}
 				log INFO "Successfully updated hyakvnc. Restarting..."
@@ -1537,18 +1537,9 @@ EOF
 
 # cmd_update()
 function cmd_update {
-	log INFO "Checking for updates..."
-	if ! hyakvnc_check_updates; then
-		log INFO "No updates to apply."
-	else
-		log INFO "Applying updates..."
-		if ! hyakvnc_pull_updates; then
-			log WARN "No updates applied."
-			exit 1
-		else
-			log INFO "Update complete."
-		fi
-	fi
+	hyakvnc_check_updates || return 1
+	hyakvnc_pull_updates || return 1
+	return 0
 }
 
 # ## COMMAND: config
