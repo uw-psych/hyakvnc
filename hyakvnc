@@ -189,14 +189,25 @@ function log {
 # Arguments: None
 # Returns: 0 if successfuly updated, 1 if not or if an error occurred
 function hyakvnc_pull_updates() {
+	local cur_branch
 	[[ -z "${HYAKVNC_REPO_DIR:-}" ]] && {
-		log DEBUG "HYAKVNC_REPO_DIR is not set. Can't pull updates."
+		log ERROR "HYAKVNC_REPO_DIR is not set. Can't pull updates."
+		return 1
+	}
+	cur_branch="$(git -C "${HYAKVNC_REPO_DIR}" branch --show-current 2>&1 || true)"
+	[[ -z "${cur_branch}" ]] && {
+		log ERROR "Couldn't determine current branch. Can't pull updates."
+		return 1
+	}
+
+	[[ "${cur_branch}" != "main" ]] && {
+		log WARN "Current branch is ${cur_branch}, not main. Be warned that this branch may not be up to date."
 		return 1
 	}
 
 	log INFO "Updating hyakvnc..."
-	git -C "${HYAKVNC_REPO_DIR}" pull --quiet origin main || {
-		log DEBUG "Couldn't apply updatesd"
+	git -C "${HYAKVNC_REPO_DIR}" pull --quiet origin "${cur_branch}" || {
+		log WARN "Couldn't apply updates"
 		return 0
 	}
 
@@ -224,33 +235,38 @@ function hyakvnc_check_updates {
 
 	local cur_branch
 	cur_branch="$(git -C "${HYAKVNC_REPO_DIR}" branch --show-current 2>&1 || true)"
-	if [[ "${cur_branch:-}" != "main" ]]; then
-		log WARN "Current branch is ${cur_branch}. Please switch to the main branch to get updates. Skipping update check!"
+		[[ -z "${cur_branch}" ]] && {
+		log ERROR "Couldn't determine current branch. Can't pull updates."
 		return 1
-	fi
+	}
 
+	[[ "${cur_branch}" != "main" ]] && {
+		log WARN "Current branch is ${cur_branch}, not main. Be warned that this branch may not be up to date."
+		return 1
+	}
+	
 	local cur_date
-	cur_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local main || echo ???)"
+	cur_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local "${cur_branch}" || echo ???)"
 	log INFO "The installed version was published ${cur_date}"
 
 	touch "${HYAKVNC_REPO_DIR}/.last_update_check"
 
 	# Get hash of local HEAD:
-	if [[ "$(git -C "${HYAKVNC_REPO_DIR}" rev-parse main || true)" == "$(git -C "${HYAKVNC_REPO_DIR}" ls-remote --heads --refs origin main | cut -f1 || true)" ]]; then
+	if [[ "$(git -C "${HYAKVNC_REPO_DIR}" rev-parse main || true)" == "$(git -C "${HYAKVNC_REPO_DIR}" ls-remote --heads --refs origin "${cur_branch}" | cut -f1 || true)" ]]; then
 		log INFO "hyakvnc is up to date."
 		return 1
 	fi
 
-	git -C "${HYAKVNC_REPO_DIR}" fetch --quiet origin main || {
+	git -C "${HYAKVNC_REPO_DIR}" fetch --quiet origin "${cur_branch}" || {
 		log DEBUG "Failed to fetch from remote"
 		return 1
 	}
 
 	local nchanges
-	nchanges="$(git -C "${HYAKVNC_REPO_DIR}" rev-list HEAD...origin/main --count || echo 0)"
+	nchanges="$(git -C "${HYAKVNC_REPO_DIR}" rev-list HEAD...origin/"${cur_branch}" --count || echo 0)"
 	if [[ "${nchanges}" -gt 0 ]]; then
 		local new_date
-		new_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local origin/main || echo ???)"
+		new_date="$(git -C "${HYAKVNC_REPO_DIR}" show -s --format=%cd --date=human-local origin/"${cur_branch}" || echo ???)"
 		log INFO "Found ${nchanges} updates. Most recent: ${new_date}"
 		return 0
 	fi
