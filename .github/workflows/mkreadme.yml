@@ -16,6 +16,7 @@ jobs:
         id: update-readme
         run: |
           if git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- hyakvnc .build/README.j2.md .github/workflows/mkreadme.yml; then
+            python3 -m pip install jinja-cli
             pushd .build/
             sed -E '/^HYAKVNC_.*#\s*%%/!d; s/=.*(#\s*%%)/:/g; s/(^.)/- \1/g' ../hyakvnc > config.inc.md
             for x in create status show stop config install; do ../hyakvnc help "$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$/```text/' | pr -e4 -t && echo '```'; done > usage.inc.md
