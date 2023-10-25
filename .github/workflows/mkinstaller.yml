@@ -3,7 +3,7 @@ name: Build installer
   push:
 
 jobs:
-  build-readme:
+  build-installer:
     runs-on: ubuntu-latest
     name: Build install.sh
     permissions: write-all
