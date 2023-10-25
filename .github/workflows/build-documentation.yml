@@ -16,25 +16,28 @@ jobs:
         id: update-docs-and-installer
         run: |
           commit_msg=""
-          if git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- hyakvnc .build/README.j2.md .github/workflows/build-documentation.yml; then
+          echo "Checking for changes in hyakvnc, .build/README.j2.md, and .github/workflows/build-documentation.yml"
+          if ! git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- hyakvnc .build/README.j2.md .build/install.j2.sh .github/workflows/build-documentation.yml; then
+            echo "Changes detected in hyakvnc, .build/README.j2.md, or .github/workflows/build-documentation.yml"
             python3 -m pip install jinja-cli
             pushd .build/
             sed -E '/^HYAKVNC_.*#\s*%%/!d; s/=.*(#\s*%%)/:/g; s/(^.)/- \1/g' ../hyakvnc > config.inc.md
             for x in create status show stop config install; do ../hyakvnc help "$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$/```text/' | pr -e4 -t && echo '```'; done > usage.inc.md
             jinja -D github_repository "${{ github.repository }}" -D github_ref_name "${{ github.ref_name }}" README.j2.md | sed 's/^.*<!-- markdownlint-disable-file -->.*$//g' > ../README.md
+            jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' install.j2.sh -o ../install.sh
             popd
+
             git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
             git config --local user.name ${{ github.event.sender.login }}
-            git add README.md
-            commit_msg="Rebuilt README.md"
+
+            if ! git diff --quiet --stat README.md; then
+                git add README.md && commit_msg="Rebuilt README.md"
+            fi
+
+            if ! git diff --quiet --stat install.sh; then
+                new_commit_msg="${commit_msg:-}"
+                [ -n "${new_commit_msg:-}" ] && new_commit_msg="${new_commit_msg} "
+                git add install.sh && new_commit_msg="Rebuilt install.sh" && commit_msg="${new_commit_msg:-}"
+            fi
+            git commit -am "${commit_msg}" && git push
           fi
-          if ! git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- .build/install.j2.sh; then
-            python3 -m pip install jinja-cli
-            jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' .build/install.j2.sh -o install.sh
-            git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
-            git config --local user.name ${{ github.event.sender.login }}
-            git add install.sh
-            [ -n "${commit_msg:-}" ] && commit_msg="${commit_msg} "
-            commit_msg="${commit_msg:-}Rebuilt install.sh"
-          fi
-          [ -n "${commit_msg:-}" ] && git commit -m "${commit_msg}" && git push
