@@ -22,7 +22,7 @@ jobs:
             python3 -m pip install jinja-cli
             pushd .build/
             sed -E '/^HYAKVNC_.*#\s*%%/!d; s/=.*(#\s*%%)/:/g; s/(^.)/- \1/g' ../hyakvnc > config.inc.md
-            for x in create status show stop config install; do ../hyakvnc help "$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$/```text/' | pr -e4 -t && echo '```'; done > usage.inc.md
+            for x in create status show stop config update install; do ../hyakvnc help "$x" | sed -E '1 s/(.*)/\n### \1\n/; 2 s/^$/```text/' | pr -e4 -t && echo '```'; done > usage.inc.md
             jinja -D github_repository "${{ github.repository }}" -D github_ref_name "${{ github.ref_name }}" README.j2.md | sed 's/^.*<!-- markdownlint-disable-file -->.*$//g' > ../README.md
             jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' install.j2.sh -o ../install.sh
             popd

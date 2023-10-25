@@ -1598,7 +1598,7 @@ function cmd_help {
 	if [[ "${1:-help}" == "help" ]]; then
 		cat <<EOF
 hyakvnc -- A tool for launching VNC sessions on Hyak.
-Usage: hyakvnc [options] [create|status|stop|show|config|install|help] [options] [args]
+Usage: hyakvnc [hyakvnc options] [create|status|stop|show|config|update|install|help] [command options] [args...]
 
 Description:
 	Stop a provided HyakVNC sesssion and clean up its job directory
@@ -1614,6 +1614,7 @@ Available commands:
 	stop	Stop a VNC session
 	show	Show connection information for a VNC session
 	config	Show current configuration for hyakvnc
+	update	Update hyakvnc
 	install	Install hyakvnc so the "hyakvnc" command can be run from anywhere.${isinstalled:-}
 	help	Show help for a command
 
