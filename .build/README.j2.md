@@ -4,6 +4,8 @@ hyakvnc -- A tool for launching VNC sessions on Hyak.
 
 `hyakvnc` is a command-line tool that makes it easy to start a graphical [VNC](https://en.wikipedia.org/wiki/Virtual_Network_Computing) session on the University of Washington [Hyak](https://hyak.uw.edu/) cluster, allowing you to interact with the system in a point-and-click environment, with support for graphical applications such as [Freesurfer](https://surfer.nmr.mgh.harvard.edu/). `hyakvnc` sessions run in [Apptainer](https://apptainer.org) containers, which provide reproducible environments that can run anywhere and be shared with other researchers.
 
+*If you're already familiar with Hyak and VNC and you just want to install `hyakvnc` immediately, you can skip to the [quick install](#quick-install) section.*
+
 ## Prerequisites
 
 Before running `hyakvnc`, you'll need the following:
@@ -78,7 +80,7 @@ ssh your-uw-netid@klone.hyak.uw.edu
 After you've connected to the login node, you can download and install `hyakvnc` by running the following command. Copy and paste it into the terminal window where you are connected to the login node and press enter:
 
 ```bash
-curl -o ~/.local/bin/hyakvnc --create-dirs -fsSL https://raw.githubusercontent.com/{{github_repository}}/{{github_ref_name}}/hyakvnc && chmod +x ~/.local/bin/hyakvnc && [[ ":${PATH}:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin:$PATH" && [-n "${ZSH_VERSION:-}" ] && rehash
+eval "$(curl -fsSL https://raw.githubusercontent.com//{{github_repository}}/{{github_ref_name}}/install.sh)"
 ```
 
 This will download and install `hyakvnc` to your `~/.local/bin` directory and add it to your `$PATH` so you can run it by typing `hyakvnc` into the terminal window.
@@ -88,7 +90,7 @@ This will download and install `hyakvnc` to your `~/.local/bin` directory and ad
 In a terminal window connected to a login node, enter this command to clone the repository and navigate into the repository directory:
 
 ```bash
-git clone https://github.com/{{github_repository}} && cd hyakvnc
+git clone --depth 1 --single-branch https://github.com/{{github_repository}} && cd hyakvnc
 ```
 
 Then, run the following command to install `hyakvnc`:
