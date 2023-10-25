@@ -36,7 +36,8 @@ _add_hyakvnc_to_path() {
 _install_hyakvnc() {
 	_HYAKVNC_DIR="${_HYAKVNC_DIR:-${HOME}/.hyakvnc}"                  # %% Local directory to store application data (default: `$HOME/.hyakvnc`)
 	_HYAKVNC_REPO_DIR="${_HYAKVNC_REPO_DIR:-${_HYAKVNC_DIR}/hyakvnc}" # Local directory to store git repository (default: `$HYAKVNC_DIR/hyakvnc`)
-	_HYAKVNC_REPO_URL="${_HYAKVNC_REPO_URL:-"{{j2_hyakvnc_repo_url}}"}"
+	_HYAKVNC_REPO_URL="${_HYAKVNC_REPO_URL:-"{{ github_repository }}"}"
+	_HYAKVNC_REPO_BRANCH="${_HYAKVNC_REPO_BRANCH:-"{{ github_ref_name }}"}"
 
 	# shellcheck disable=SC2016
 	_UNEXPANDED_BIN_INSTALL_DIR='${HOME}/.local/bin'                          # Local directory to store executable (default: `$HOME/.local/bin`)
@@ -46,7 +47,7 @@ _install_hyakvnc() {
 	mkdir -p "${_BIN_INSTALL_DIR}" &&
 		rm -rf "${_HYAKVNC_DIR}/hyakvnc-tmp" &&
 		echo "Fetching hyakvnc from ${_HYAKVNC_REPO_URL}" 2>&1 &&
-		git clone --depth 1 --single-branch --quiet "${_HYAKVNC_REPO_URL}" ~/.hyakvnc/hyakvnc-tmp &&
+		git clone --branch "${_HYAKVNC_REPO_BRANCH}" --depth 1 --single-branch --quiet "${_HYAKVNC_REPO_URL}" ~/.hyakvnc/hyakvnc-tmp &&
 		rm -rf "${_HYAKVNC_REPO_DIR}" &&
 		mv "${_HYAKVNC_DIR}/hyakvnc-tmp" "${_HYAKVNC_REPO_DIR}" &&
 		ln -sf "${_HYAKVNC_REPO_DIR}/hyakvnc" "${_BIN_INSTALL_DIR}/hyakvnc" &&
