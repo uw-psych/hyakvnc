@@ -252,7 +252,7 @@ function hyakvnc_check_updates {
 	touch "${HYAKVNC_REPO_DIR}/.last_update_check"
 
 	# Get hash of local HEAD:
-	if [[ "$(git -C "${HYAKVNC_REPO_DIR}" rev-parse main || true)" == "$(git -C "${HYAKVNC_REPO_DIR}" ls-remote --heads --refs origin "${cur_branch}" | cut -f1 || true)" ]]; then
+	if [[ "$(git -C "${HYAKVNC_REPO_DIR}" rev-parse "${cur_branch}" || true)" == "$(git -C "${HYAKVNC_REPO_DIR}" ls-remote --heads --refs origin "${cur_branch}" | cut -f1 || true)" ]]; then
 		log INFO "hyakvnc is up to date."
 		return 1
 	fi
