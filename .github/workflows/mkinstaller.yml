@@ -18,7 +18,6 @@ jobs:
           if ! git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- .build/install.j2.sh .github/workflows/mkinstaller.yml; then
             python3 -m pip install jinja-cli
             jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' .build/install.j2.sh -o install.sh
-            popd
             git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
             git config --local user.name ${{ github.event.sender.login }}
             git add install.sh
