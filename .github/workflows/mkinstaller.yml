@@ -8,30 +8,17 @@ jobs:
     name: Build install.sh
     permissions: write-all
     steps:
-      - name: Install jinja-cli
+      - name: Template, create, and push install.sh
         run: |
-          python3 -m pip install jinja-cli
-      - name: Check out code for the container build
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Check if install.j2.sh has changed
-        id: installer-changed
-        run: |
-          if git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- .build/install.j2.sh .github/workflows/mkinstaller.yml; then
-            gh run cancel ${{ github.run_id }}
-            gh run watch ${{ github.run_id }}
+          if ! git --no-pager diff --name-only --quiet --diff-filter=AM ${{ github.event.before }} ${{ github.event.after }} -- .build/install.j2.sh .github/workflows/mkinstaller.yml; then
+            python3 -m pip install jinja-cli
+            pushd .build/
+            jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' install.sh.j2 > ../install.sh
+            popd
+            git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
+            git config --local user.name ${{ github.event.sender.login }}
+            git add install.sh
+            git commit -am "Update install.sh"
+            git push
           fi
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create and push install.sh
-        run: |
-          pushd .build/
-          jinja -D j2_hyakvnc_repo_url 'https://github.com/${{ github.repository }}' install.sh.j2 > ../install.sh
-          popd
-          git config --local user.email "${{ github.event.sender.id }}+${{ github.event.sender.login }}@users.noreply.github.com"
-          git config --local user.name ${{ github.event.sender.login }}
-          git add install.sh
-          git commit -am "Update install.sh"
-          git push
 
