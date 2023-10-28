@@ -80,7 +80,7 @@ ssh your-uw-netid@klone.hyak.uw.edu
 After you've connected to the login node, you can download and install `hyakvnc` by running the following command. Copy and paste it into the terminal window where you are connected to the login node and press enter:
 
 ```bash
-eval "$(curl -fsSL https://raw.githubusercontent.com//maouw/hyakvnc/main/install.sh)"
+eval "$(curl -fsSL https://raw.githubusercontent.com//maouw/hyakvnc/apptainer-pull-cache/install.sh)"
 ```
 
 This will download and install `hyakvnc` to your `~/.local/bin` directory and add it to your `$PATH` so you can run it by typing `hyakvnc` into the terminal window.
@@ -158,6 +158,9 @@ Options:
     -m, --mem   Amount of memory to request (default: 4G)
     -t, --timelimit Slurm timelimit to use (default: 12:00:00)
     -g, --gpus  Number of GPUs to request (default: )
+
+Advanced options:
+    --no-ghcr-oras-preload  Don't preload ORAS GitHub Container Registry images
 
 Extra arguments:
     Any extra arguments will be passed to apptainer run.
@@ -308,8 +311,8 @@ When you set an environment variable, it is advisable to surround the value with
 The following variables are available:
 
 - HYAKVNC_DIR: Local directory to store application data (default: `$HOME/.hyakvnc`)
-- HYAKVNC_CHECK_UPDATE_FREQUENCY: How often to check for updates in `[d]`ays or `[m]`inutes (default: `0` for every time. Use `1d` for daily, `10m` for every 10 minutes, etc. `-1` to disable.)
 - HYAKVNC_CONFIG_FILE: Configuration file to use (default: `$HYAKVNC_DIR/hyakvnc-config.env`)
+- HYAKVNC_CHECK_UPDATE_FREQUENCY: How often to check for updates in `[d]`ays or `[m]`inutes (default: `0` for every time. Use `1d` for daily, `10m` for every 10 minutes, etc. `-1` to disable.)
 - HYAKVNC_LOG_FILE: Log file to use (default: `$HYAKVNC_DIR/hyakvnc.log`)
 - HYAKVNC_LOG_LEVEL: Log level to use for interactive output (default: `INFO`)
 - HYAKVNC_LOG_FILE_LEVEL: Log level to use for log file output (default: `DEBUG`)
@@ -317,6 +320,8 @@ The following variables are available:
 - HYAKVNC_DEFAULT_TIMEOUT: Seconds to wait for most commands to complete before timing out (default: `30`)
 - HYAKVNC_VNC_PASSWORD: Password to use for new VNC sessions (default: `password`)
 - HYAKVNC_VNC_DISPLAY: VNC display to use (default: `:1`)
+- HYAKVNC_APPTAINER_CONTAINERS_DIR: Directory to look for apptainer containers (default: (none))
+- HYAKVNC_APPTAINER_GHCR_ORAS_PRELOAD: Whether to preload SIF files from the ORAS GitHub Container Registry (default: `0`)
 - HYAKVNC_APPTAINER_BIN: Name of apptainer binary (default: `apptainer`)
 - HYAKVNC_APPTAINER_CONTAINER: Path to container image to use (default: (none; set by `--container` option))
 - HYAKVNC_APPTAINER_APP_VNCSERVER: Name of app in the container that starts the VNC session (default: `vncserver`)

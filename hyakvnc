@@ -30,15 +30,8 @@ fi
 HYAKVNC_VERSION="0.3.1"
 
 # ## App preferences:
-HYAKVNC_DIR="${HYAKVNC_DIR:-${HOME}/.hyakvnc}"                        # %% Local directory to store application data (default: `$HOME/.hyakvnc`)
-HYAKVNC_REPO_DIR="${HYAKVNC_REPO_DIR:-${HYAKVNC_DIR}/hyakvnc}"        # Local directory to store git repository (default: `$HYAKVNC_DIR/hyakvnc`)
-HYAKVNC_CHECK_UPDATE_FREQUENCY="${HYAKVNC_CHECK_UPDATE_FREQUENCY:-0}" # %% How often to check for updates in `[d]`ays or `[m]`inutes (default: `0` for every time. Use `1d` for daily, `10m` for every 10 minutes, etc. `-1` to disable.)
-HYAKVNC_CONFIG_FILE="${HYAKVNC_DIR}/hyakvnc-config.env"               # %% Configuration file to use (default: `$HYAKVNC_DIR/hyakvnc-config.env`)
-HYAKVNC_LOG_FILE="${HYAKVNC_LOG_FILE:-${HYAKVNC_DIR}/hyakvnc.log}"    # %% Log file to use (default: `$HYAKVNC_DIR/hyakvnc.log`)
-HYAKVNC_LOG_LEVEL="${HYAKVNC_LOG_LEVEL:-INFO}"                        # %% Log level to use for interactive output (default: `INFO`)
-HYAKVNC_LOG_FILE_LEVEL="${HYAKVNC_LOG_FILE_LEVEL:-DEBUG}"             # %% Log level to use for log file output (default: `DEBUG`)
-HYAKVNC_SSH_HOST="${HYAKVNC_SSH_HOST:-klone.hyak.uw.edu}"             # %% Default SSH host to use for connection strings (default: `klone.hyak.uw.edu`)
-HYAKVNC_DEFAULT_TIMEOUT="${HYAKVNC_DEFAULT_TIMEOUT:-30}"              # %% Seconds to wait for most commands to complete before timing out (default: `30`)
+HYAKVNC_DIR="${HYAKVNC_DIR:-${HOME}/.hyakvnc}"          # %% Local directory to store application data (default: `$HOME/.hyakvnc`)
+HYAKVNC_CONFIG_FILE="${HYAKVNC_DIR}/hyakvnc-config.env" # %% Configuration file to use (default: `$HYAKVNC_DIR/hyakvnc-config.env`)
 
 # hyakvnc_load_config()
 # Load the hyakvnc configuration from the config file
@@ -65,6 +58,14 @@ if ! (return 0 2>/dev/null); then
 	hyakvnc_load_config
 fi
 
+HYAKVNC_REPO_DIR="${HYAKVNC_REPO_DIR:-${HYAKVNC_DIR}/hyakvnc}"        # Local directory to store git repository (default: `$HYAKVNC_DIR/hyakvnc`)
+HYAKVNC_CHECK_UPDATE_FREQUENCY="${HYAKVNC_CHECK_UPDATE_FREQUENCY:-0}" # %% How often to check for updates in `[d]`ays or `[m]`inutes (default: `0` for every time. Use `1d` for daily, `10m` for every 10 minutes, etc. `-1` to disable.)
+HYAKVNC_LOG_FILE="${HYAKVNC_LOG_FILE:-${HYAKVNC_DIR}/hyakvnc.log}"    # %% Log file to use (default: `$HYAKVNC_DIR/hyakvnc.log`)
+HYAKVNC_LOG_LEVEL="${HYAKVNC_LOG_LEVEL:-INFO}"                        # %% Log level to use for interactive output (default: `INFO`)
+HYAKVNC_LOG_FILE_LEVEL="${HYAKVNC_LOG_FILE_LEVEL:-DEBUG}"             # %% Log level to use for log file output (default: `DEBUG`)
+HYAKVNC_SSH_HOST="${HYAKVNC_SSH_HOST:-klone.hyak.uw.edu}"             # %% Default SSH host to use for connection strings (default: `klone.hyak.uw.edu`)
+HYAKVNC_DEFAULT_TIMEOUT="${HYAKVNC_DEFAULT_TIMEOUT:-30}"              # %% Seconds to wait for most commands to complete before timing out (default: `30`)
+
 # ## VNC preferences:
 HYAKVNC_VNC_PASSWORD="${HYAKVNC_VNC_PASSWORD:-password}" # %% Password to use for new VNC sessions (default: `password`)
 HYAKVNC_VNC_DISPLAY="${HYAKVNC_VNC_DISPLAY:-:10}"        # %% VNC display to use (default: `:1`)
@@ -72,15 +73,12 @@ HYAKVNC_VNC_DISPLAY="${HYAKVNC_VNC_DISPLAY:-:10}"        # %% VNC display to use
 HYAKVNC_MACOS_VNC_VIEWER_BUNDLEIDS="${HYAKVNC_MACOS_VNC_VIEWER_BUNDLEIDS:-com.turbovnc.vncviewer.VncViewer com.realvnc.vncviewer com.tigervnc.vncviewer}" # macOS bundle identifiers for VNC viewer executables (default: `com.turbovnc.vncviewer com.realvnc.vncviewer com.tigervnc.vncviewer`)
 
 # ## Apptainer preferences:
-HYAKVNC_APPTAINER_BIN="${HYAKVNC_APPTAINER_BIN:-apptainer}" # %% Name of apptainer binary (default: `apptainer`)
-
-HYAKVNC_LOGIN_NODE_APPTAINER_BIN="${HYAKVNC_LOGIN_NODE_APPTAINER_BIN:-/sw/apptainer/default/bin/apptainer}" # Path to apptainer binary on login node(default: `/sw/apptainer/default/bin/apptainer`)
-
-HYAKVNC_APPTAINER_CONTAINER="${HYAKVNC_APPTAINER_CONTAINER:-}" # %% Path to container image to use (default: (none; set by `--container` option))
-
-HYAKVNC_APPTAINER_APP_VNCSERVER="${HYAKVNC_APPTAINER_APP_VNCSERVER:-vncserver}" # %% Name of app in the container that starts the VNC session (default: `vncserver`)
-HYAKVNC_APPTAINER_APP_VNCKILL="${HYAKVNC_APPTAINER_APP_VNCKILL:-vnckill}"       # %% Name of app that cleanly stops the VNC session in the container (default: `vnckill`)
-
+HYAKVNC_APPTAINER_CONTAINERS_DIR="${HYAKVNC_APPTAINER_CONTAINERS_DIR:-}"                               # %% Directory to look for apptainer containers (default: (none))
+HYAKVNC_APPTAINER_GHCR_ORAS_PRELOAD="${HYAKVNC_APPTAINER_GHCR_ORAS_PRELOAD:-1}"                        # %% Whether to preload SIF files from the ORAS GitHub Container Registry (default: `0`)
+HYAKVNC_APPTAINER_BIN="${HYAKVNC_APPTAINER_BIN:-apptainer}"                                            # %% Name of apptainer binary (default: `apptainer`)
+HYAKVNC_APPTAINER_CONTAINER="${HYAKVNC_APPTAINER_CONTAINER:-}"                                         # %% Path to container image to use (default: (none; set by `--container` option))
+HYAKVNC_APPTAINER_APP_VNCSERVER="${HYAKVNC_APPTAINER_APP_VNCSERVER:-vncserver}"                        # %% Name of app in the container that starts the VNC session (default: `vncserver`)
+HYAKVNC_APPTAINER_APP_VNCKILL="${HYAKVNC_APPTAINER_APP_VNCKILL:-vnckill}"                              # %% Name of app that cleanly stops the VNC session in the container (default: `vnckill`)
 HYAKVNC_APPTAINER_WRITABLE_TMPFS="${HYAKVNC_APPTAINER_WRITABLE_TMPFS:-${APPTAINER_WRITABLE_TMPFS:-1}}" # %% Whether to use a writable tmpfs for the container (default: `1`)
 HYAKVNC_APPTAINER_CLEANENV="${HYAKVNC_APPTAINER_CLEANENV:-${APPTAINER_CLEANENV:-1}}"                   # %% Whether to use a clean environment for the container (default: `1`)
 HYAKVNC_APPTAINER_ADD_BINDPATHS="${HYAKVNC_APPTAINER_ADD_BINDPATHS:-}"                                 # %% Bind paths to add to the container (default: (none))
@@ -221,10 +219,7 @@ function hyakvnc_pull_updates() {
 function hyakvnc_check_updates {
 	log DEBUG "Checking for updates... "
 	# Check if git is installed:
-	command -v git >/dev/null 2>&1 || {
-		log WARN "git is not installed. Can't check for updates"
-		return 1
-	}
+	check_command git ERROR || return 1
 
 	# Check if git is available and that the git directory is a valid git repository:
 	git -C "${HYAKVNC_REPO_DIR}" tag >/dev/null 2>&1 || {
@@ -359,14 +354,22 @@ function hyakvnc_autoupdate {
 	return 0
 }
 
-# ## SLURM utility functons:
+# ## General utility functions:
 
-# check_slurm_installed()
-# Check if SLURM is installed
-# Arguments: None
-function check_slurm_installed {
-	command -v squeue >/dev/null 2>&1 || return 1
+# check_command()
+# Check if a command is available
+# Arguments:
+# - <command> - The command to check
+# - <loglevel> <message> - Passed to log if the command is not available (optional)
+function check_command {
+	if [[ -z "${1:-}" ]] || ! command -v "${1}" >/dev/null 2>&1; then
+		[[ $# -gt 1 ]] && log "${@:2}"
+		return 1
+	fi
+	return 0
 }
+
+# ## SLURM utility functons:
 
 # check_slurm_running {
 # Check if SLURM is running
@@ -461,7 +464,7 @@ function hyakvnc_config_init {
 		return 1
 	}
 
-	if ! check_slurm_installed; then
+	if ! check_command squeue; then
 		log ERROR "SLURM is not installed! Can't initialize configuration."
 		return 1
 	fi
@@ -560,8 +563,8 @@ function stop_hyakvnc_session {
 
 	if [[ -n "${should_cancel}" ]]; then
 		log INFO "Cancelling job ${jobid}"
-		sleep 5 # Wait for VNC process to exit
-		scancel "${jobid}" || log ERROR "scancel failed to cancel job ${jobid}"
+		sleep 1 # Wait for VNC process to exit
+		scancel --full "${jobid}" || log ERROR "scancel failed to cancel job ${jobid}"
 	fi
 	return 0
 }
@@ -717,6 +720,107 @@ function cleanup_launched_jobs_and_exit {
 	exit 1
 }
 
+# # Apptainer utility functions:
+
+# ghcr_get_oras_sif()
+# Get a GitHub Container Registry token for a given repository
+# Arguments:
+#  - url: URL to download from (required)
+#  - output_path: Directory or path to save the image to (optional)
+# Returns: 0 if successful, 1 if not or if an error occurred
+# Prints: The token to stdout
+function ghcr_get_oras_sif {
+	check_command curl || return 1    # Check if curl is installed
+	check_command python3 || return 1 # Check if python3 is installed
+	local url output_path
+	[[ -z "${url:=${1:-}}" ]] && {
+		log ERROR "URL must be specified"
+		return 1
+	}
+	output_path="${2:-./}" # Optionally set the output file
+	[[ -d "${output_path}" ]] && [[ ! -w "${output_path}" ]] && {
+		log ERROR "Output directory \"${output_path}\" is not writable"
+		return 1
+	}
+
+	# Check that the URL is an ORAS GitHub Container Registry URL:
+	local address image_ref repo image_tag
+	case "${url}" in
+	oras://ghcr.io/*)
+		address="${url#oras://}"
+		image_ref="${address#ghcr.io/}"
+		repo="${image_ref%%:*}"
+		[[ -z "${repo}" ]] && {
+			log ERROR "Failed to parse repository from URL \"${url}\""
+			return 1
+		}
+		[[ ${image_ref} == *:* ]] && image_tag="${image_ref##*:}"
+		image_tag="${image_tag:-latest}"
+		;;
+	*) # Not a GitHub Container Registry URL
+		log ERROR "URL \"${url}\" is not a GitHub Container Registry URL for an ORAS image"
+		return 1
+		;;
+	esac
+
+	# Get a token for the repository (required to get the manifest, but freely available by this request):
+	# Uses curl to get the token, then python to parse the JSON response
+	local repo_token
+	repo_token="$(curl -sSL "https://ghcr.io/token?scope=repository:${repo}:pull&service=ghcr.io" | python3 -I -c 'import sys,json; print(json.load(sys.stdin)["token"])' 2>/dev/null || true)"
+	[[ -z "${repo_token}" ]] && {
+		log ERROR "Failed to get token for repository ${repo}"
+		return 1
+	}
+
+	# Request the manifest for the image tag:
+	local manifest
+	manifest="$(curl -sSL \
+		-H "Accept: application/vnd.oci.image.manifest.v1+json" \
+		-H "Authorization: Bearer ${repo_token}" \
+		"https://ghcr.io/v2/${repo}/manifests/${image_tag}" \
+		2>/dev/null || true)"
+	[[ -z "${manifest}" ]] && {
+		log ERROR "Failed to get manifest for repository ${repo}"
+		return 1
+	}
+
+	local image_sha256
+	image_sha256="$(echo "${manifest}" | python3 -I -c \
+		'import sys, json; s=[ x for x in json.load(sys.stdin)["layers"] if x.get("mediaType", "") == "application/vnd.sylabs.sif.layer.v1.sif" and x.get("digest", "").startswith("sha256")]; sys.exit(1) if len(s) != 1 else print(s[0]["digest"])' \
+		2>/dev/null || true)"
+	[[ -z "${image_sha256:-}" ]] && {
+		log ERROR "Failed to get image info for repository ${repo}"
+		return 1
+	}
+	[[ -d "${output_path}" ]] && output_path="${output_path}/${image_sha256}" # Append the image SHA256 to the output path if it's a directory
+
+	if [[ -r "${output_path}" ]]; then
+		log DEBUG "Image already exists at ${output_path}"
+		if check_command sha256sum; then
+			if sha256sum --quiet --status --ignore-missing --check <(echo "${image_sha256##sha256:}" "${output_path}"); then
+				log DEBUG "Image at ${output_path} matches expected SHA256 ${image_sha256}"
+				echo "${output_path}"
+				return 0
+			else
+				log DEBUG "Image at ${output_path} does not match expected SHA256 ${image_sha256}. Will redownload and overwrite."
+			fi
+		fi
+	fi
+
+	# Download the image:
+	local image_url
+	image_url="https://ghcr.io/v2/${repo}/blobs/${image_sha256}"
+	curl -fSL -H "Authorization: Bearer ${repo_token}" -o "${output_path}" "${image_url}" || {
+		log ERROR "Failed to download image from ${image_url} to ${output_path}"
+		rm -f "${output_path}" && log DEBUG "Removed output file at ${output_path}" # Remove the file if it exists
+		return 1
+	}
+	chmod +x "${output_path}"
+	log DEBUG "Downloaded image to ${output_path}"
+	echo "${output_path}"
+	return 0
+}
+
 # # Commands
 
 # ## Command: create
@@ -741,6 +845,9 @@ Options:
 	-t, --timelimit	Slurm timelimit to use (default: ${HYAKVNC_SLURM_TIMELIMIT})
 	-g, --gpus	Number of GPUs to request (default: ${HYAKVNC_SLURM_GPUS})
 
+Advanced options:
+	--no-ghcr-oras-preload	Don't preload ORAS GitHub Container Registry images
+
 Extra arguments:
 	Any extra arguments will be passed to apptainer run.
 	See 'apptainer run --help' for more information.
@@ -760,7 +867,7 @@ EOF
 function cmd_create {
 	local apptainer_start_args=()
 	local sbatch_args=(--parsable)
-	local container_basename container_name start
+	local container_basename container_name start tailpid
 	# <TODO> If a job ID was specified, don't launch a new job
 	# <TODO> If a job ID was specified, check that the job exists and is running
 
@@ -838,6 +945,10 @@ function cmd_create {
 			export HYAKVNC_SLURM_GPUS="${1:-}"
 			shift
 			;;
+		--no-ghcr-oras-preload) # Don't preload ORAS GitHub Container Registry images
+			shift
+			export HYAKVNC_APPTAINER_GHCR_ORAS_PRELOAD=0
+			;;
 		--) # Args to pass to Apptainer
 			shift
 			if [[ -z "${HYAKVNC_APPTAINER_ADD_ARGS:-}" ]]; then
@@ -890,73 +1001,92 @@ function cmd_create {
 		exit 1
 	}
 
-	# Check if APPTAINER_CACHEDIR is set:
-	if [[ -d "/gscratch/scrubbed" ]]; then
-		local newcachedir
-		if [[ "${APPTAINER_CACHEDIR:-}" != /gscratch/* ]] && [[ "${APPTAINER_CACHEDIR:-}" != /tmp/* ]]; then
-			log WARN "APPTAINER_CACHEDIR is not set to a directory under /gscratch or /tmp. This may cause problems with storage space."
+	# If /gscratch/scrubbed exists (i.e., running on Klone) and APPTAINER_CACHEDIR is not set to a directory under /gscratch or /tmp, warn the user and ask if they want to set it to a directory under /gscratch/scrubbed :
+	if [[ -d "/gscratch/scrubbed" ]] && [[ "${APPTAINER_CACHEDIR:-}" != /gscratch/* ]] && [[ "${APPTAINER_CACHEDIR:-}" != /tmp/* ]]; then
+		log WARN "APPTAINER_CACHEDIR is not set to a directory under /gscratch or /tmp. This may cause problems with storage space."
 
-			# Check if running interactively:
-			if [[ -t 0 ]]; then
-				local choice1 choice2 newcachedir
-				newcachedir="/gscratch/scrubbed/${USER}/.cache/apptainer"
+		# Check if running interactively:
+		if [[ -t 0 ]]; then
+			local choice1 choice2 newcachedir
+			newcachedir="/gscratch/scrubbed/${USER}/.cache/apptainer"
 
-				# Check if should set and create APPTAINER_CACHEDIR:
-				echo "Would you like to set APPTAINER_CACHEDIR to ${newcachedir}? (Recommended)"
-				read -rp "Continue (y/n)?" choice1
+			while true; do
+				read -rp "Would you like to set APPTAINER_CACHEDIR to \"${newcachedir}\" (Recommended)? (y/n): " choice1
 				case "${choice1}" in
 				y | Y)
-					echo "Creating ${newcachedir}"
+					log INFO "Creating ${newcachedir}"
 					mkdir -p "${newcachedir}" || {
 						log WARN "Failed to create directory ${newcachedir}"
 						return 1
 					}
+					choice1=y # Set choice1 to y so we can use it in the next case statement
 					export APPTAINER_CACHEDIR="${newcachedir}"
+					break
+					;;
+				n | N)
+					log WARN "Not setting APPTAINER_CACHEDIR."
+					break
 
-					# Check if the user wants to add APPTAINER_CACHEDIR to their shell's startup file:
-					echo "Would you like to add APPTAINER_CACHEDIR to your shell's startup file to persist this setting? (Recommended)"
-					read -rp "Continue (y/n)?" choice2
+					;;
+				*)
+					log ERROR "Invalid choice ${choice1:-}."
+					;;
+				esac
+			done
+
+			if [[ "${choice1}" == "y" ]]; then
+
+				# Check if the user wants to add the directory to their shell's startup file:
+				while true; do
+					read -rp "Would you like to add APPTAINER_CACHEDIR to your shell's startup file to persist this setting? (y/n): " choice2
 					case "${choice2}" in
 					y | Y)
 						# Check if using ZSH:
 						if [[ -n "${ZSH_VERSION:-}" ]]; then
-							if [[ -r "${HOME}/.zshenv}" ]]; then
-								echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.zshenv" && echo "Added APPTAINER_CACHEDIR to ~/.zshenv"
+							if [[ -w "${HOME}/.zshenv}" ]]; then
+								echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.zshenv" && log INFO "Added APPTAINER_CACHEDIR to ~/.zshenv"
 							else
-								echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.zshrc" && echo "Added APPTAINER_CACHEDIR to ~/.zshrc"
+								echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${ZDOTDIR:-${HOME}}/.zshrc" && log INFO "Added APPTAINER_CACHEDIR to ${ZDOTDIR:-~}/.zshrc"
 							fi
 						# Check if using Bash:
 						elif [[ -n "${BASH_VERSION:-}" ]]; then
-							echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.bashrc" && echo "Added APPTAINER_CACHEDIR to ~/.bashrc"
+							echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.bashrc" && log INFO "Added APPTAINER_CACHEDIR to ~/.bashrc"
 						# Write to ~/.profile if we can't determine shell type:
 						else
-							echo "Could not determine shell type. Adding APPTAINER_CACHEDIR to ~/.profile."
-							echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.profile" && echo "Added APPTAINER_CACHEDIR to ~/.profile"
+							log INFO "Could not determine shell type. Adding APPTAINER_CACHEDIR to ~/.profile."
+							echo "export APPTAINER_CACHEDIR=\"${newcachedir}\"" >>"${HOME}/.profile" && log INFO "Added APPTAINER_CACHEDIR to ~/.profile"
 						fi
+						break
 						;;
 
-					n | N) log WARN "Not adding APPTAINER_CACHEDIR to your shell's startup file. You may need to do this again in the future." ;;
+					n | N)
+						log WARN "Not adding APPTAINER_CACHEDIR to your shell's startup file. You may need to do this again in the future."
+						break
+						;;
 					*)
 						log ERROR "Invalid choice ${choice2:-}."
-						exit 1
 						;;
 					esac
-					;;
-
-				n | N) log WARN "Not setting APPTAINER_CACHEDIR. You may encounter problems with storage space." ;;
-				*)
-					log ERROR "Invalid choice ${choice1:-}."
-					exit 1
-					;;
-				esac
+				done
 			fi
+		fi
+	fi
+
+	# Preload ORAS images if requested:
+	if [[ "${HYAKVNC_APPTAINER_GHCR_ORAS_PRELOAD:-1}" == 1 ]]; then
+		local oras_cache_dir oras_image_path
+		oras_cache_dir="${APPTAINER_CACHEDIR:-${HOME}/.apptainer/cache}/cache/oras"
+		if mkdir -p "${oras_cache_dir}"; then
+			log INFO "Preloading ORAS image for \"${HYAKVNC_APPTAINER_CONTAINER}\""
+			oras_image_path="$(ghcr_get_oras_sif "${HYAKVNC_APPTAINER_CONTAINER}" "${APPTAINER_CACHEDIR}/cache/oras" || true)"
+			[[ -z "${oras_image_path:-}" ]] && log ERROR "hyakvnc failed to preload ORAS image for \"${HYAKVNC_APPTAINER_CONTAINER:-}\" on its own. Apptainer will try to download the image by itself. If you don't want to preload ORAS images, use the --no-ghcr-oras-preload option."
+		else
+			log ERROR "Failed to create directory ${oras_cache_dir}."
 		fi
 	fi
 
 	export HYAKVNC_SLURM_JOB_NAME="${HYAKVNC_SLURM_JOB_PREFIX}${container_name}"
 	export SBATCH_JOB_NAME="${HYAKVNC_SLURM_JOB_NAME}" && log TRACE "Set SBATCH_JOB_NAME to ${SBATCH_JOB_NAME}"
-
-	log INFO "Creating HyakVNC job named \"${HYAKVNC_SLURM_JOB_NAME}\" for container ${container_basename}"
 
 	# Set sbatch arguments or environment variables:
 	#   CPUs has to be specified as a sbatch argument because it's not settable by environment variable:
@@ -1013,7 +1143,7 @@ function cmd_create {
 	# Trap signals to clean up the job if the user exits the script:
 	[[ -z "${XNOTRAP:-}" ]] && trap cleanup_launched_jobs_and_exit SIGINT SIGTERM SIGHUP SIGABRT SIGQUIT ERR EXIT
 
-	log INFO "Launching job with command: sbatch ${sbatch_args[*]}"
+	log DEBUG "Launching job with command: sbatch ${sbatch_args[*]}"
 
 	sbatch_result=$(sbatch "${sbatch_args[@]}") || {
 		log ERROR "Failed to launch job"
@@ -1040,10 +1170,11 @@ function cmd_create {
 	log DEBUG "Job directory: ${jobdir}"
 
 	# Wait for sbatch job to start running by monitoring the output of squeue:
+	log INFO "Waiting for job ${launched_jobid} (\"${HYAKVNC_SLURM_JOB_NAME}\") to start"
 	start=${EPOCHSECONDS:-}
 	while true; do
 		if ((EPOCHSECONDS - start > HYAKVNC_SLURM_SUBMIT_TIMEOUT)); then
-			log ERROR "Timed out waiting for job to start"
+			log ERROR "Timed out waiting for job ${launched_jobid} to start"
 			exit 1
 		fi
 		sleep 1
@@ -1085,6 +1216,7 @@ function cmd_create {
 	if check_log_level "${HYAKVNC_LOG_LEVEL}" DEBUG; then
 		echo "Streaming log from ${jobdir}/slurm.log"
 		tail -n 1 -f "${jobdir}/slurm.log" --pid=$$ 2>/dev/null | sed --unbuffered 's/^/DEBUG: slurm.log: /' & # Follow the SLURM log file in the background
+		tailpid=$!
 	fi
 
 	case "${HYAKVNC_APPTAINER_CONTAINER}" in
@@ -1117,8 +1249,12 @@ function cmd_create {
 		[[ ! -d "${jobdir}" ]] && log TRACE "Job directory does not exist yet" && continue
 		[[ ! -e "${jobdir}/vnc/socket.uds" ]] && log TRACE "Job socket does not exist yet" && continue
 		[[ ! -S "${jobdir}/vnc/socket.uds" ]] && log TRACE "Job socket is not a socket" && continue
+		[[ ! -r "${jobdir}/vnc/vnc.log" ]] && log TRACE "VNC log file not readable yet" && continue
+
 		break
 	done
+
+	grep -q '^xstartup.turbovnc: Executing' <(timeout "${HYAKVNC_DEFAULT_TIMEOUT}" tail -f "${jobdir}/vnc/vnc.log" || true)
 
 	log INFO "VNC server started"
 	# Get details about the Xvnc process:
@@ -1128,6 +1264,7 @@ function cmd_create {
 	}
 	# Stop trapping the signals:
 	[[ -z "${XNOTRAP:-}" ]] && trap - SIGINT SIGTERM SIGHUP SIGABRT SIGQUIT ERR EXIT
+	kill -9 "${tailpid}" 2>/dev/null # Stop following the SLURM log file
 	return 0
 }
 
@@ -1688,9 +1825,9 @@ function main {
 
 	case "${action}" in
 	cmd_help | cmd_install | cmd_update | cmd_config)
-	if check_slurm_running; then
-		hyakvnc_config_init || log WARN "Could't initialize config automatically" # Don't exit if config can't be initialized (e.g., not running on SLURM)
-	fi
+		if check_slurm_running; then
+			hyakvnc_config_init || log WARN "Could't initialize config automatically" # Don't exit if config can't be initialized (e.g., not running on SLURM)
+		fi
 		;;
 	*)
 		hyakvnc_config_init || exit 1                                        # Fill in default values for config variables or exit if config can't be initialized

@@ -37,7 +37,7 @@ _install_hyakvnc() {
 	_HYAKVNC_DIR="${_HYAKVNC_DIR:-${HOME}/.hyakvnc}"                  # %% Local directory to store application data (default: `$HOME/.hyakvnc`)
 	_HYAKVNC_REPO_DIR="${_HYAKVNC_REPO_DIR:-${_HYAKVNC_DIR}/hyakvnc}" # Local directory to store git repository (default: `$HYAKVNC_DIR/hyakvnc`)
 	_HYAKVNC_REPO_URL="${_HYAKVNC_REPO_URL:-"https://github.com/maouw/hyakvnc"}"
-	_HYAKVNC_REPO_BRANCH="${_HYAKVNC_REPO_BRANCH:-"main"}"
+	_HYAKVNC_REPO_BRANCH="${_HYAKVNC_REPO_BRANCH:-"apptainer-pull-cache"}"
 
 	# shellcheck disable=SC2016
 	_UNEXPANDED_BIN_INSTALL_DIR='${HOME}/.local/bin'                          # Local directory to store executable (default: `$HOME/.local/bin`)
