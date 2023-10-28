@@ -39,5 +39,6 @@ jobs:
                 [ -n "${new_commit_msg:-}" ] && new_commit_msg="${new_commit_msg} "
                 git add install.sh && new_commit_msg="Rebuilt install.sh" && commit_msg="${new_commit_msg:-}"
             fi
-            git commit -am "${commit_msg}" && git push
+            
+            [ -n "${commit_msg:-}" ] && git commit -am "${commit_msg}" && git push
           fi
