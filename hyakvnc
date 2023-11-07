@@ -266,6 +266,93 @@ function hyakvnc_check_updates() {
 	return 1
 }
 
+
+# ghcr_get_oras_sif()
+# Get a GitHub Container Registry token for a given repository
+# Arguments:
+#  - url: URL to download from (required)
+#  - output_path: Directory or path to save the image to (optional)
+# Returns: 0 if successful, 1 if not or if an error occurred
+# Prints: The token to stdout
+function ghcr_get_oras_sif() {
+	check_command curl || return 1  # Check if curl is installed
+	check_command python3 || return 1 # Check if python3 is installed
+	local url output_path
+	[[ -z "${url:=${1:-}}" ]] && {
+		log ERROR "URL must be specified"
+		return 1
+	}
+	output_path="${2:-./}" # Optionally set the output file
+	[[ -d "${output_path}" ]] && [[ ! -w "${output_path}" ]] && {
+		log ERROR "Output directory \"${output_path}\" is not writable"
+		return 1
+	}
+
+	# Check that the URL is an ORAS GitHub Container Registry URL:
+	local address image_ref repo image_tag
+	case "${url}" in
+		oras://ghcr.io/*)
+			address="${url#oras://}"
+			image_ref="${address#ghcr.io/}"
+			repo="${image_ref%%:*}"
+			[[ -z "${repo}" ]] && {
+				log ERROR "Failed to parse repository from URL \"${url}\""
+				return 1
+			}
+			[[ ${image_ref} == *:* ]] && image_tag="${image_ref##*:}"
+			image_tag="${image_tag:-latest}"
+			;;
+		*) # Not a GitHub Container Registry URL
+			log ERROR "URL \"${url}\" is not a GitHub Container Registry URL for an ORAS image"
+			return 1
+			;;
+	esac
+
+	# Get a token for the repository (required to get the manifest, but freely available by this request):
+	# Uses curl to get the token, then python to parse the JSON response
+	local repo_token
+	repo_token="$(curl -sSL "https://ghcr.io/token?scope=repository:${repo}:pull&service=ghcr.io" | python3 -I -c 'import sys,json; print(json.load(sys.stdin)["token"])' 2>/dev/null || true)"
+	[[ -z "${repo_token}" ]] && {
+		log ERROR "Failed to get token for repository ${repo}"
+		return 1
+	}
+
+	# Request the manifest for the image tag:
+	local manifest
+	manifest="$(curl -sSL \
+		-H "Accept: application/vnd.oci.image.manifest.v1+json" \
+		-H "Authorization: Bearer ${repo_token}" \
+		"https://ghcr.io/v2/${repo}/manifests/${image_tag}" \
+		2>/dev/null || true)"
+	[[ -z "${manifest}" ]] && {
+		log ERROR "Failed to get manifest for repository ${repo}"
+		return 1
+	}
+
+	local image_sha256
+	image_sha256="$(echo "${manifest}" | python3 -I -c \
+		'import sys, json; s=[ x for x in json.load(sys.stdin)["layers"] if x.get("mediaType", "") == "application/vnd.sylabs.sif.layer.v1.sif" and x.get("digest", "").startswith("sha256")]; sys.exit(1) if len(s) != 1 else print(s[0]["digest"])' \
+		2>/dev/null || true)"
+	[[ -z "${image_sha256:-}" ]] && {
+		log ERROR "Failed to get image info for repository ${repo}"
+		return 1
+	}
+	[[ -d "${output_path}" ]] && output_path="${output_path}/${image_sha256}" # Append the image SHA256 to the output path if it's a directory
+
+	if [[ -r "${output_path}" ]]; then
+		log DEBUG "Image already exists at ${output_path}"
+		if check_command sha256sum; then
+			if sha256sum --quiet --status --ignore-missing --check <(echo "${image_sha256##sha256:}" "${output_path}"); then
+				log DEBUG "Image at ${output_path} matches expected SHA256 ${image_sha256}"
+				echo "${output_path}"
+				return 0
+			else
+				log DEBUG "Image at ${output_path} does not match expected SHA256 ${image_sha256}. Will redownload and overwrite."
+			fi
+		fi
+	fi
+
+
 # hyakvnc_autoupdate()
 # Unless updates were checked recenetly per $HYAKVNC_CHECK_UPDATE_FREQUENCY,
 # 	check if a hyakvnc update is available. If running interactively, prompt
