@@ -810,7 +810,7 @@ function ghcr_get_oras_sif {
 	# Download the image:
 	local image_url
 	image_url="https://ghcr.io/v2/${repo}/blobs/${image_sha256}"
-	curl -fSL -H "Authorization: Bearer ${repo_token}" -o "${output_path}" "${image_url}" || {
+	curl --progress -fSL -H "Authorization: Bearer ${repo_token}" -o "${output_path}" "${image_url}" || {
 		log ERROR "Failed to download image from ${image_url} to ${output_path}"
 		rm -f "${output_path}" && log DEBUG "Removed output file at ${output_path}" # Remove the file if it exists
 		return 1
