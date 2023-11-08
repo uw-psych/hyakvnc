@@ -80,7 +80,7 @@ ssh your-uw-netid@klone.hyak.uw.edu
 After you've connected to the login node, you can download and install `hyakvnc` by running the following command. Copy and paste it into the terminal window where you are connected to the login node and press enter:
 
 ```bash
-eval "$(curl -fsSL https://raw.githubusercontent.com//{{github_repository}}/{{github_ref_name}}/install.sh)"
+eval "$(curl -fsSL https://raw.githubusercontent.com/{{github_repository}}/{{github_ref_name}}/install.sh)"
 ```
 
 This will download and install `hyakvnc` to your `~/.local/bin` directory and add it to your `$PATH` so you can run it by typing `hyakvnc` into the terminal window.
