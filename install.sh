@@ -36,7 +36,7 @@ _add_hyakvnc_to_path() {
 _install_hyakvnc() {
 	_HYAKVNC_DIR="${_HYAKVNC_DIR:-${HOME}/.hyakvnc}"                  # %% Local directory to store application data (default: `$HOME/.hyakvnc`)
 	_HYAKVNC_REPO_DIR="${_HYAKVNC_REPO_DIR:-${_HYAKVNC_DIR}/hyakvnc}" # Local directory to store git repository (default: `$HYAKVNC_DIR/hyakvnc`)
-	_HYAKVNC_REPO_URL="${_HYAKVNC_REPO_URL:-"https://github.com/maouw/hyakvnc"}"
+	_HYAKVNC_REPO_URL="${_HYAKVNC_REPO_URL:-"https://github.com/uw-psych/hyakvnc"}"
 	_HYAKVNC_REPO_BRANCH="${_HYAKVNC_REPO_BRANCH:-"main"}"
 
 	# shellcheck disable=SC2016
