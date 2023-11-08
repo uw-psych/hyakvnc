@@ -1072,6 +1072,8 @@ function cmd_create {
 		fi
 	fi
 
+	case "${HYAKVNC_APPTAINER_CONTAINER}" in 
+	oras://*)
 	# Preload ORAS images if requested:
 	if [[ "${HYAKVNC_APPTAINER_GHCR_ORAS_PRELOAD:-1}" == 1 ]]; then
 		local oras_cache_dir oras_image_path
@@ -1084,6 +1086,9 @@ function cmd_create {
 			log ERROR "Failed to create directory ${oras_cache_dir}."
 		fi
 	fi
+	;;
+	*) ;;
+	esac
 
 	export HYAKVNC_SLURM_JOB_NAME="${HYAKVNC_SLURM_JOB_PREFIX}${container_name}"
 	export SBATCH_JOB_NAME="${HYAKVNC_SLURM_JOB_NAME}" && log TRACE "Set SBATCH_JOB_NAME to ${SBATCH_JOB_NAME}"
