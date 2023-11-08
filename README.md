@@ -62,8 +62,8 @@ See https://hyak.uw.edu/docs/setup/intracluster-keys for more information.
 
 You'll need to find a HyakVNC-compatible container image to run your VNC session in. The following images are provided by us and can be used with `hyakvnc` by copying and pasting the URL into the `hyakvnc create` command:
 
-- `oras://ghcr.io/maouw/hyakvnc_apptainer/ubuntu22.04_turbovnc:latest` -- Ubuntu 22.04 with TurboVNC
-- `oras://ghcr.io/maouw/ubuntu22.04_freesurfer:latest` -- Ubuntu 22.04 with TurboVNC and Freesurfer
+- `oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest` -- Ubuntu 22.04 with TurboVNC
+- `oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-freesurfer-ubuntu22.04:latest` -- Ubuntu 22.04 with TurboVNC and Freesurfer
 
 ## Installing `hyakvnc`
 
@@ -170,7 +170,7 @@ Examples:
     # Create a VNC session using the container ~/containers/mycontainer.sif
     hyakvnc create -c ~/containers/mycontainer.sif
     # Create a VNC session using the URL for a container:
-    hyakvnc create -c oras://ghcr.io/maouw/hyakvnc_apptainer/ubuntu22.04_turbovnc:latest
+    hyakvnc create -c oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest
     # Use the SLURM account escience, the partition gpu-a40, 4 CPUs, 1GB of memory, 1 GPU, and 1 hour of time:
     hyakvnc create -c ~/containers/mycontainer.sif -A escience -p gpu-a40 -C 4 -m 1G -t 1:00:00 -g 1
 
