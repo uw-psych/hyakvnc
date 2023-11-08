@@ -15,7 +15,7 @@ Before running `hyakvnc`, you'll need the following:
 - A VNC client/viewer ([TurboVNC viewer](https://www.turbovnc.org) is recommended for all platforms)
 - HYAK Klone access with compute resources
 - A private SSH key on your local machine which has been added to the authorized keys on the login node of the HYAK Klone cluster (see below)
-- A HyakVNC-compatible Apptainer container image in a directory on Hyak (usually with the file extension `.sif`) or the URL to one (e.g,., `oras://ghcr.io/maouw/hyakvnc_apptainer/ubuntu22.04_turbovnc:latest`)
+- A HyakVNC-compatible Apptainer container image in a directory on Hyak (usually with the file extension `.sif`) or the URL to one (e.g,., `oras://ghcr.io/maouw/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest`)
 
 Follow the instructions below to set up your machine correctly:
 
@@ -62,8 +62,8 @@ See https://hyak.uw.edu/docs/setup/intracluster-keys for more information.
 
 You'll need to find a HyakVNC-compatible container image to run your VNC session in. The following images are provided by us and can be used with `hyakvnc` by copying and pasting the URL into the `hyakvnc create` command:
 
-- `oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest` -- Ubuntu 22.04 with TurboVNC
-- `oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-freesurfer-ubuntu22.04:latest` -- Ubuntu 22.04 with TurboVNC and Freesurfer
+- `oras://ghcr.io/maouw/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest` -- Ubuntu 22.04 with TurboVNC
+- `oras://ghcr.io/maouw/hyakvnc_apptainer/hyakvnc-freesurfer-ubuntu22.04:latest` -- Ubuntu 22.04 with TurboVNC and Freesurfer
 
 ## Installing `hyakvnc`
 
@@ -108,7 +108,7 @@ If you prefer, you may continue to use `hyakvnc` from the directory where you cl
 Start a VNC session with the `hyakvnc create` command followed by arguments to specify the container. In this example, we'll use a basic container for a graphical environment from the HyakVNC GitHub Container Registry:
 
 ```bash
-hyakvnc create --container oras://maouw/hyakvnc_apptainer/ubuntu22.04_turbovnc:latest
+hyakvnc create --container oras://ghcr.io/maouw/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest
 ```
 
 It may take a few minutes to download the container if you're running it the first time. If successful, `hyakvnc` should print commands and instructions to connect:
@@ -170,7 +170,7 @@ Examples:
     # Create a VNC session using the container ~/containers/mycontainer.sif
     hyakvnc create -c ~/containers/mycontainer.sif
     # Create a VNC session using the URL for a container:
-    hyakvnc create -c oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest
+    hyakvnc create -c oras://ghcr.io/maouw/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest
     # Use the SLURM account escience, the partition gpu-a40, 4 CPUs, 1GB of memory, 1 GPU, and 1 hour of time:
     hyakvnc create -c ~/containers/mycontainer.sif -A escience -p gpu-a40 -C 4 -m 1G -t 1:00:00 -g 1
 
