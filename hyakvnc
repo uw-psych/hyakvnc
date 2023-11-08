@@ -856,7 +856,7 @@ Examples:
 	# Create a VNC session using the container ~/containers/mycontainer.sif
 	hyakvnc create -c ~/containers/mycontainer.sif
 	# Create a VNC session using the URL for a container:
-	hyakvnc create -c oras://ghcr.io/uw-psych/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest
+	hyakvnc create -c oras://ghcr.io/maouw/hyakvnc_apptainer/hyakvnc-vncserver-ubuntu22.04:latest
 	# Use the SLURM account escience, the partition gpu-a40, 4 CPUs, 1GB of memory, 1 GPU, and 1 hour of time:
 	hyakvnc create -c ~/containers/mycontainer.sif -A escience -p gpu-a40 -C 4 -m 1G -t 1:00:00 -g 1
 
